@@ -770,10 +770,15 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     if (data && Array.isArray(data.items)) {
       properties = data.items;
-      total = data.total || 100; // API usually provides total, but fallback if missing
-      totalPages = Math.ceil(total / 10);
+      // The API provides pagination info in _meta
+      if (data._meta) {
+        total = data._meta.totalCount || properties.length;
+        totalPages = data._meta.pageCount || 1;
+      } else {
+        total = data.total || properties.length;
+        totalPages = data.totalPages || Math.ceil(total / 10);
+      }
     } else if (Array.isArray(data)) {
-      // Fallback for array response
       properties = data;
       total = data.length;
       totalPages = 1;

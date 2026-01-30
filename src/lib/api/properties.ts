@@ -59,6 +59,12 @@ export interface PropertiesResponse {
     total?: number;
     page?: number;
     totalPages?: number;
+    _meta?: {
+        totalCount: number;
+        pageCount: number;
+        currentPage: number;
+        perPage: number;
+    };
     _links?: {
         self: { href: string };
         first?: { href: string };
