@@ -19,9 +19,12 @@ import IosShareIcon from '@mui/icons-material/IosShare';
 
 interface PropertyCardProps {
     property: Property;
+    viewMode?: 'grid' | 'list';
 }
 
-const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
+const PropertyCard: React.FC<PropertyCardProps> = ({ property, viewMode = 'grid' }) => {
+    const isList = viewMode === 'list';
+
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('en-MY', {
             style: 'currency',
@@ -39,22 +42,29 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
             sx={{
                 height: '100%',
                 display: 'flex',
-                flexDirection: 'column',
+                flexDirection: isList ? { xs: 'column', sm: 'row' } : 'column',
                 position: 'relative',
+                borderRadius: 1,
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
-                    transform: 'translateY(-8px)',
+                    transform: isList ? 'none' : 'translateY(-8px)',
                     boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
                 },
             }}
         >
-            <Box sx={{ position: 'relative' }}>
+            <Box sx={{
+                position: 'relative',
+                width: isList ? { xs: '100%', sm: '320px' } : '100%'
+            }}>
                 <CardMedia
                     component="img"
-                    height="240"
+                    height={isList ? "100%" : "240"}
                     image={property.image || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80'}
                     alt={property.name}
-                    sx={{ objectFit: 'cover' }}
+                    sx={{
+                        objectFit: 'cover',
+                        height: isList ? { xs: '200px', sm: '100%' } : '240px'
+                    }}
                 />
 
                 {/* Price Tag Overlay */}
@@ -76,8 +86,30 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
                     {formatPrice(property.price)}
                 </Box>
 
-                {/* Favorite & Share Buttons */}
+                {/* Agent Overlay (Only in grid or mobile list) */}
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%)',
+                        p: 1.5,
+                        display: { xs: 'flex', sm: isList ? 'none' : 'flex' },
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-end'
+                    }}
+                >
+                    <Typography variant="caption" sx={{ color: 'white', fontWeight: 600 }}>
+                        {property.account?.name || 'AGENT NAME'}
+                    </Typography>
+                </Box>
+            </Box>
+
+            <CardContent sx={{ flexGrow: 1, p: 2.5, position: 'relative' }}>
+                {/* Favorite & Share Buttons (Positioned better for list mode) */}
                 <Stack
+                    direction="row"
                     spacing={1}
                     sx={{
                         position: 'absolute',
@@ -89,8 +121,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
                         size="small"
                         sx={{
                             bgcolor: 'white',
+                            border: '1px solid #E2E8F0',
                             '&:hover': { bgcolor: '#f8fafc' },
-                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                         }}
                     >
                         <FavoriteBorderIcon fontSize="small" sx={{ color: '#64748B' }} />
@@ -99,35 +131,14 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
                         size="small"
                         sx={{
                             bgcolor: 'white',
+                            border: '1px solid #E2E8F0',
                             '&:hover': { bgcolor: '#f8fafc' },
-                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                         }}
                     >
                         <IosShareIcon fontSize="small" sx={{ color: '#64748B' }} />
                     </IconButton>
                 </Stack>
 
-                {/* Agent Overlay */}
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%)',
-                        p: 1.5,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-end'
-                    }}
-                >
-                    <Typography variant="caption" sx={{ color: 'white', fontWeight: 600 }}>
-                        {property.account?.name || 'AGENT NAME'}
-                    </Typography>
-                </Box>
-            </Box>
-
-            <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
                 <Typography
                     variant="h6"
                     sx={{
@@ -135,9 +146,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
                         fontSize: '1.05rem',
                         lineHeight: 1.4,
                         mb: 1.5,
-                        minHeight: '2.8rem',
+                        pr: 10, // Avoid overlap with buttons
+                        minHeight: isList ? 'auto' : '2.8rem',
                         display: '-webkit-box',
-                        WebkitLineClamp: 2,
+                        WebkitLineClamp: isList ? 1 : 2,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                         color: 'text.primary',
@@ -154,7 +166,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
                             color: 'text.secondary',
                             fontSize: '0.875rem',
                             display: '-webkit-box',
-                            WebkitLineClamp: 2,
+                            WebkitLineClamp: isList ? 1 : 2,
                             WebkitBoxOrient: 'vertical',
                             overflow: 'hidden'
                         }}
@@ -162,6 +174,12 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
                         {property.address}
                     </Typography>
                 </Box>
+
+                {isList && property.account && (
+                    <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600, mb: 2, display: { xs: 'none', sm: 'block' } }}>
+                        Agent: {property.account.name}
+                    </Typography>
+                )}
 
                 <Stack direction="row" spacing={2.5} sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

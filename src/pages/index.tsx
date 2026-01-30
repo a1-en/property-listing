@@ -35,6 +35,7 @@ import {
   FormControlLabel,
   FormGroup,
   Chip,
+  Badge,
 } from '@mui/material';
 
 import SearchIcon from '@mui/icons-material/Search';
@@ -45,6 +46,8 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import MapIcon from '@mui/icons-material/Map';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import CheckIcon from '@mui/icons-material/Check';
+import SortIcon from '@mui/icons-material/Sort';
 
 import PropertyCard from '@/components/PropertyCard';
 import Filters from '@/components/Filters';
@@ -70,12 +73,38 @@ export default function Home({ initialData, error }: HomeProps) {
   const [bedsBathsAnchor, setBedsBathsAnchor] = useState<null | HTMLElement>(null);
   const [beds, setBeds] = useState<string[]>([]);
   const [baths, setBaths] = useState<string[]>([]);
+  const [sortAnchor, setSortAnchor] = useState<null | HTMLElement>(null);
 
   const openBedsBaths = Boolean(bedsBathsAnchor);
+  const openSort = Boolean(sortAnchor);
 
   const { page = '1', sort = 'default' } = router.query;
   const currentPage = parseInt(page as string, 10);
   const currentSort = sort as string;
+
+  // Active Filter counts for Badges
+  const getFilterCount = () => {
+    let count = 0;
+    const { minPrice, maxPrice, categories, tenure, furnishings, isAuction } = router.query;
+    if (minPrice) count++;
+    if (maxPrice) count++;
+    if (categories) count++;
+    if (tenure) count++;
+    if (furnishings) count++;
+    if (isAuction === 'true') count++;
+    return count;
+  };
+
+  const getBedsBathsCount = () => {
+    let count = 0;
+    if (router.query.bedRooms) {
+      count += (router.query.bedRooms as string).split(',').length;
+    }
+    if (router.query.bathRooms) {
+      count += (router.query.bathRooms as string).split(',').length;
+    }
+    return count;
+  };
 
   const handleBedsBathsClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setBedsBathsAnchor(event.currentTarget);
@@ -83,6 +112,29 @@ export default function Home({ initialData, error }: HomeProps) {
 
   const handleBedsBathsClose = () => {
     setBedsBathsAnchor(null);
+  };
+
+  const handleSortClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setSortAnchor(event.currentTarget);
+  };
+
+  const handleSortClose = () => {
+    setSortAnchor(null);
+  };
+
+  const getSortLabel = (sortValue: string) => {
+    const labels: Record<string, string> = {
+      default: 'Recommended',
+      priceLowToHigh: 'Price: Low to High',
+      priceHighToLow: 'Price: High to Low',
+      floorSizeLowToHigh: 'Floor Size: Low to High',
+      floorSizeHighToLow: 'Floor Size: High to Low',
+      psfLowToHigh: 'PSF: Low to High',
+      psfHighToLow: 'PSF: High to Low',
+      newest: 'Newest Listings',
+      oldest: 'Oldest Listings',
+    };
+    return labels[sortValue] || 'Sort By';
   };
 
   const handleBedsBathsApply = () => {
@@ -142,10 +194,25 @@ export default function Home({ initialData, error }: HomeProps) {
   const handleFilterChange = (filters: PropertyFilters) => {
     const query: any = { page: 1, sort: currentSort };
 
-    if (filters.minPrice) query.minPrice = filters.minPrice;
-    if (filters.maxPrice) query.maxPrice = filters.maxPrice;
+    if (filters.minPrice) query.minPrice = filters.minPrice.toString();
+    if (filters.maxPrice) query.maxPrice = filters.maxPrice.toString();
     if (filters.categories && filters.categories.length > 0) {
       query.categories = filters.categories.join(',');
+    }
+    if (filters.bedRooms && filters.bedRooms.length > 0) {
+      query.bedRooms = filters.bedRooms.join(',');
+    }
+    if (filters.bathRooms && filters.bathRooms.length > 0) {
+      query.bathRooms = filters.bathRooms.join(',');
+    }
+    if (filters.tenure && filters.tenure.length > 0) {
+      query.tenure = filters.tenure.join(',');
+    }
+    if (filters.furnishings && filters.furnishings.length > 0) {
+      query.furnishings = filters.furnishings.join(',');
+    }
+    if (filters.isAuction) {
+      query.isAuction = 'true';
     }
     if (listingType) query.section = listingType;
 
@@ -154,9 +221,7 @@ export default function Home({ initialData, error }: HomeProps) {
       query,
     });
 
-    if (isMobile) {
-      setMobileFiltersOpen(false);
-    }
+    setMobileFiltersOpen(false);
   };
 
   // Get current filters from URL
@@ -171,6 +236,21 @@ export default function Home({ initialData, error }: HomeProps) {
     }
     if (router.query.categories) {
       filters.categories = (router.query.categories as string).split(',');
+    }
+    if (router.query.bedRooms) {
+      filters.bedRooms = (router.query.bedRooms as string).split(',').map(n => parseInt(n, 10));
+    }
+    if (router.query.bathRooms) {
+      filters.bathRooms = (router.query.bathRooms as string).split(',').map(n => parseInt(n, 10));
+    }
+    if (router.query.tenure) {
+      filters.tenure = (router.query.tenure as string).split(',');
+    }
+    if (router.query.furnishings) {
+      filters.furnishings = (router.query.furnishings as string).split(',');
+    }
+    if (router.query.isAuction === 'true') {
+      filters.isAuction = true;
     }
 
     return filters;
@@ -208,7 +288,7 @@ export default function Home({ initialData, error }: HomeProps) {
           sx={{
             p: 2,
             mb: 4,
-            borderRadius: 4,
+            borderRadius: 1.5,
             border: '1px solid #E2E8F0',
             display: 'flex',
             flexWrap: 'wrap',
@@ -223,7 +303,7 @@ export default function Home({ initialData, error }: HomeProps) {
             sx={{
               flex: { xs: '1 1 100%', md: '1 1 0' },
               '& .MuiOutlinedInput-root': {
-                borderRadius: 3,
+                borderRadius: 1,
                 bgcolor: '#FBFDFF'
               }
             }}
@@ -239,15 +319,20 @@ export default function Home({ initialData, error }: HomeProps) {
           <Stack direction="row" spacing={1.5} sx={{ flexShrink: 0 }}>
             <Button
               variant="outlined"
-              startIcon={<FilterListIcon />}
+              startIcon={
+                <Badge badgeContent={getFilterCount()} color="primary" sx={{ '& .MuiBadge-badge': { right: -2, top: -2, fontSize: '0.65rem', height: 16, minWidth: 16 } }}>
+                  <FilterListIcon />
+                </Badge>
+              }
               onClick={() => setMobileFiltersOpen(true)}
               sx={{
-                borderRadius: 2,
+                borderRadius: 1,
                 px: 3,
                 py: 1.5,
                 borderColor: '#E2E8F0',
                 color: 'text.primary',
-                fontWeight: 500,
+                fontWeight: 600,
+                textTransform: 'none',
                 '&:hover': { borderColor: 'primary.main', bgcolor: 'transparent' }
               }}
             >
@@ -255,15 +340,20 @@ export default function Home({ initialData, error }: HomeProps) {
             </Button>
             <Button
               variant="outlined"
-              startIcon={<BedIcon />}
+              startIcon={
+                <Badge badgeContent={getBedsBathsCount()} color="primary" sx={{ '& .MuiBadge-badge': { right: -2, top: -2, fontSize: '0.65rem', height: 16, minWidth: 16 } }}>
+                  <BedIcon />
+                </Badge>
+              }
               onClick={handleBedsBathsClick}
               sx={{
-                borderRadius: 2,
+                borderRadius: 1,
                 px: 3,
                 py: 1.5,
                 borderColor: '#E2E8F0',
                 color: 'text.primary',
-                fontWeight: 500,
+                fontWeight: 600,
+                textTransform: 'none',
                 '&:hover': { borderColor: 'primary.main', bgcolor: 'transparent' }
               }}
             >
@@ -325,7 +415,7 @@ export default function Home({ initialData, error }: HomeProps) {
               '& .MuiToggleButton-root': {
                 px: 3,
                 border: '1px solid #E2E8F0',
-                borderRadius: 2,
+                borderRadius: 1,
                 fontWeight: 600,
                 '&.Mui-selected': {
                   bgcolor: 'primary.main',
@@ -350,19 +440,78 @@ export default function Home({ initialData, error }: HomeProps) {
               </Typography>
 
               <Stack direction="row" spacing={2} alignItems="center">
-                <FormControl size="small" sx={{ minWidth: 160 }}>
-                  <Select
-                    value={currentSort}
-                    onChange={(e) => handleSortChange(e.target.value)}
-                    sx={{ borderRadius: 2, bgcolor: 'white' }}
-                  >
-                    <MenuItem value="default">IE Recommended</MenuItem>
-                    <MenuItem value="priceLowToHigh">Price: Low to High</MenuItem>
-                    <MenuItem value="priceHighToLow">Price: High to Low</MenuItem>
-                    <MenuItem value="newest">Newest First</MenuItem>
-                    <MenuItem value="oldest">Oldest First</MenuItem>
-                  </Select>
-                </FormControl>
+                <Button
+                  variant="outlined"
+                  startIcon={<SortIcon />}
+                  onClick={handleSortClick}
+                  sx={{
+                    borderRadius: 1,
+                    px: 2,
+                    py: 1,
+                    borderColor: '#E2E8F0',
+                    color: 'text.primary',
+                    fontWeight: 500,
+                    textTransform: 'none',
+                    bgcolor: 'white',
+                    '&:hover': { borderColor: 'primary.main', bgcolor: '#F8FAFC' }
+                  }}
+                >
+                  {getSortLabel(currentSort)}
+                </Button>
+
+                <Popover
+                  open={openSort}
+                  anchorEl={sortAnchor}
+                  onClose={handleSortClose}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  PaperProps={{ sx: { p: 0, width: 260, borderRadius: 3, mt: 1, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' } }}
+                >
+                  <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9' }}>
+                    <Typography sx={{ fontWeight: 700 }}>Sort By</Typography>
+                    <Button
+                      size="small"
+                      onClick={() => { handleSortChange('default'); handleSortClose(); }}
+                      sx={{ fontWeight: 600, textTransform: 'none' }}
+                    >
+                      Clear
+                    </Button>
+                  </Box>
+
+                  <Stack spacing={0}>
+                    {[
+                      { label: 'Recommended', value: 'default' },
+                      { label: 'Price: Low to High', value: 'priceLowToHigh' },
+                      { label: 'Price: High to Low', value: 'priceHighToLow' },
+                      { label: 'Floor Size: Low to High', value: 'floorSizeLowToHigh' },
+                      { label: 'Floor Size: High to Low', value: 'floorSizeHighToLow' },
+                      { label: 'PSF: Low to High', value: 'psfLowToHigh' },
+                      { label: 'PSF: High to Low', value: 'psfHighToLow' },
+                      { label: 'Newest Listings', value: 'newest' },
+                      { label: 'Oldest Listings', value: 'oldest' },
+                    ].map((option) => (
+                      <Button
+                        key={option.value}
+                        fullWidth
+                        onClick={() => { handleSortChange(option.value); handleSortClose(); }}
+                        sx={{
+                          justifyContent: 'space-between',
+                          px: 2,
+                          py: 1.5,
+                          borderRadius: 0,
+                          color: currentSort === option.value ? 'primary.main' : 'text.primary',
+                          fontWeight: currentSort === option.value ? 700 : 500,
+                          textTransform: 'none',
+                          bgcolor: 'transparent',
+                          '&:hover': { bgcolor: '#F8FAFC' }
+                        }}
+                      >
+                        {option.label}
+                        {currentSort === option.value && <CheckIcon fontSize="small" color="primary" />}
+                      </Button>
+                    ))}
+                  </Stack>
+                </Popover>
 
                 <ToggleButtonGroup
                   value={viewMode}
@@ -386,8 +535,8 @@ export default function Home({ initialData, error }: HomeProps) {
               <>
                 <Grid container spacing={3}>
                   {initialData.items.map((property: any) => (
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={property.id || property._id}>
-                      <PropertyCard property={property} />
+                    <Grid size={viewMode === 'list' ? { xs: 12 } : { xs: 12, sm: 6, md: 4 }} key={property.id || property._id}>
+                      <PropertyCard property={property} viewMode={viewMode} />
                     </Grid>
                   ))}
                 </Grid>
@@ -412,71 +561,129 @@ export default function Home({ initialData, error }: HomeProps) {
           {/* Right Sidebar */}
           <Grid size={{ xs: 12, lg: 3 }}>
             <Stack spacing={4}>
-              {/* Resources Card */}
+              {/* Resources Section */}
               <Box>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>Property Discovery & Resources</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, fontSize: '1.25rem' }}>Property Discovery & Resources</Typography>
+                <Typography variant="body2" color="#64748B" sx={{ mb: 2, lineHeight: 1.6, fontSize: '0.95rem' }}>
                   There are {initialData?.total?.toLocaleString()} Properties for {listingType === 'rent' ? 'rent' : 'sale'} in Malaysia. You can use the enhanced search filters available to find the right
-                  <Link href="#" sx={{ ml: 0.5, fontWeight: 600 }}>landed homes</Link>,
-                  <Link href="#" sx={{ ml: 0.5, fontWeight: 600 }}>condominium</Link>,
-                  <Link href="#" sx={{ ml: 0.5, fontWeight: 600 }}>bungalow</Link> or
-                  <Link href="#" sx={{ ml: 0.5, fontWeight: 600 }}>residential land</Link> in this area.
+                  <Link href="#" sx={{ color: 'primary.main', textDecoration: 'underline', mx: 0.5 }}>landed homes</Link>,
+                  <Link href="#" sx={{ color: 'primary.main', textDecoration: 'underline', mx: 0.5 }}>condominium</Link>,
+                  <Link href="#" sx={{ color: 'primary.main', textDecoration: 'underline', mx: 0.5 }}>bungalow</Link> or
+                  <Link href="#" sx={{ color: 'primary.main', textDecoration: 'underline', mx: 0.5 }}>residential land</Link> in this area.
                 </Typography>
               </Box>
 
               {/* Map View Card */}
               <Paper
+                elevation={0}
                 sx={{
-                  p: 3,
-                  borderRadius: 4,
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  position: 'relative',
-                  overflow: 'hidden'
+                  borderRadius: 1.5,
+                  border: '1px solid #E2E8F0',
+                  overflow: 'hidden',
+                  bgcolor: 'white'
                 }}
               >
-                <Box sx={{ position: 'relative', zIndex: 1 }}>
-                  <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                    <Box sx={{ bgcolor: 'rgba(255,255,255,0.2)', p: 1, borderRadius: 1.5 }}>
-                      <MapIcon />
+                <Box sx={{ bgcolor: 'primary.main', p: 3, color: 'white' }}>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Box sx={{ bgcolor: 'rgba(255,255,255,0.2)', p: 1, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <MapIcon sx={{ fontSize: 24 }} />
                     </Box>
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>Explore on Map</Typography>
-                    <Chip label="NEW" size="small" sx={{ bgcolor: '#FCD34D', color: '#92400E', fontWeight: 800, fontSize: '0.65rem' }} />
+                    <Chip
+                      label="NEW"
+                      size="small"
+                      sx={{
+                        bgcolor: '#FCD34D',
+                        color: '#92400E',
+                        fontWeight: 800,
+                        fontSize: '0.65rem',
+                        height: 20
+                      }}
+                    />
                   </Stack>
-                  <Typography variant="body2" sx={{ mb: 3, opacity: 0.9 }}>
-                    View all {initialData?.total?.toLocaleString()} properties for {listingType} in Malaysia on an interactive map.
+                </Box>
+                <Box sx={{ p: 3 }}>
+                  <Typography variant="body2" color="#64748B" sx={{ mb: 3, lineHeight: 1.6, fontSize: '0.95rem' }}>
+                    View all {initialData?.total?.toLocaleString()} Properties for {listingType} in Malaysia on an interactive map. Find listings near your preferred locations, schools, and amenities.
                   </Typography>
                   <Button
                     fullWidth
                     variant="contained"
                     sx={{
-                      bgcolor: 'white',
-                      color: 'primary.main',
+                      bgcolor: 'primary.main',
+                      color: 'white',
                       py: 1.5,
                       fontWeight: 700,
-                      '&:hover': { bgcolor: '#f8fafc' }
+                      borderRadius: 1,
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      '&:hover': { bgcolor: 'primary.dark' }
                     }}
                   >
                     Open Map View →
                   </Button>
                 </Box>
-                {/* Decorative pattern could be added here */}
               </Paper>
 
               {/* Popular Locations */}
-              <Box>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                  <LocationOnIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Popular Locations</Typography>
-                </Stack>
-                <Stack spacing={1}>
-                  {['Kuala Lumpur', 'Selangor', 'Johor', 'Penang', 'Perak'].map((loc) => (
-                    <Link key={loc} href="#" underline="hover" color="text.primary" sx={{ fontWeight: 500, py: 0.5 }}>
-                      {loc}
+              <Paper
+                elevation={0}
+                sx={{
+                  borderRadius: 1.5,
+                  border: '1px solid #E2E8F0',
+                  overflow: 'hidden',
+                  bgcolor: 'white'
+                }}
+              >
+                <Box sx={{ bgcolor: '#EFF6FF', p: 2, borderBottom: '1px solid #E2E8F0' }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography sx={{ fontSize: '1.1rem' }}>📍</Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>Popular Locations</Typography>
+                  </Stack>
+                </Box>
+                <Box sx={{ p: 3 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: '#64748B', display: 'block', mb: 2, letterSpacing: '0.05em' }}>
+                    TOP STATES
+                  </Typography>
+                  <Stack spacing={1.5}>
+                    {[
+                      'Selangor',
+                      'Johor',
+                      'Kuala Lumpur',
+                      'Penang',
+                      'Kedah'
+                    ].map((loc) => (
+                      <Stack key={loc} direction="row" spacing={1.5} alignItems="center">
+                        <LocationOnIcon sx={{ fontSize: 18, color: 'text.primary' }} />
+                        <Link
+                          href="#"
+                          underline="hover"
+                          sx={{
+                            color: 'primary.main',
+                            fontWeight: 500,
+                            fontSize: '0.95rem'
+                          }}
+                        >
+                          Property for {listingType === 'rent' ? 'Rent' : 'Sale'} in {loc}
+                        </Link>
+                      </Stack>
+                    ))}
+                    <Link
+                      href="#"
+                      underline="hover"
+                      sx={{
+                        color: 'primary.main',
+                        fontWeight: 600,
+                        fontSize: '0.95rem',
+                        pt: 1,
+                        display: 'block'
+                      }}
+                    >
+                      View More
                     </Link>
-                  ))}
-                </Stack>
-              </Box>
+                  </Stack>
+                </Box>
+              </Paper>
             </Stack>
           </Grid>
         </Grid>
@@ -506,7 +713,19 @@ export default function Home({ initialData, error }: HomeProps) {
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
-    const { page = '1', sort = 'default', minPrice, maxPrice, categories, section, bedRooms, bathRooms } = context.query;
+    const {
+      page = '1',
+      sort = 'default',
+      minPrice,
+      maxPrice,
+      categories,
+      section,
+      bedRooms,
+      bathRooms,
+      tenure,
+      furnishings,
+      isAuction
+    } = context.query;
 
     // Build filters from query params
     const filters: PropertyFilters = {};
@@ -520,10 +739,19 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     // Handle bedRooms and bathRooms as arrays of numbers
     if (bedRooms) {
-      filters.bedRooms = (bedRooms as string).split(',').map(n => n === 'Studio' ? 0 : parseInt(n, 10));
+      filters.bedRooms = (bedRooms as string).split(',').map(n => n === 'Studio' ? 0 : parseInt(n, 10)).filter(num => !isNaN(num));
     }
     if (bathRooms) {
-      filters.bathRooms = (bathRooms as string).split(',').map(n => parseInt(n, 10));
+      filters.bathRooms = (bathRooms as string).split(',').map(n => parseInt(n, 10)).filter(num => !isNaN(num));
+    }
+    if (tenure) {
+      filters.tenure = (tenure as string).split(',');
+    }
+    if (furnishings) {
+      filters.furnishings = (furnishings as string).split(',');
+    }
+    if (isAuction === 'true') {
+      filters.isAuction = true;
     }
 
     // Fetch properties

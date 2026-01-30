@@ -12,6 +12,8 @@ export interface PropertyFilters {
     minPrice?: number;
     maxPrice?: number;
     furnishings?: string[];
+    tenure?: string[];
+    isAuction?: boolean;
 }
 
 export interface PropertyQueryParams {
@@ -101,8 +103,12 @@ export function getSortValue(sortOption: string): string {
         default: '-createdAt',
         priceLowToHigh: 'price',
         priceHighToLow: '-price',
-        oldest: 'createdAt',
+        floorSizeLowToHigh: 'floorSize',
+        floorSizeHighToLow: '-floorSize',
+        psfLowToHigh: 'psf',
+        psfHighToLow: '-psf',
         newest: '-createdAt',
+        oldest: 'createdAt',
     };
 
     return sortMap[sortOption] || '-createdAt';
