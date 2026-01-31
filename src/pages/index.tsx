@@ -36,18 +36,26 @@ import {
   FormGroup,
   Chip,
   Badge,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import BedIcon from '@mui/icons-material/Bed';
+import BathtubIcon from '@mui/icons-material/Bathtub';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import MapIcon from '@mui/icons-material/Map';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import CheckIcon from '@mui/icons-material/Check';
-import SortIcon from '@mui/icons-material/Sort';
+import {
+  Sort as SortIcon,
+  Close as CloseIcon,
+} from '@mui/icons-material';
 
 import PropertyCard from '@/components/PropertyCard';
 import Filters from '@/components/Filters';
@@ -85,13 +93,15 @@ export default function Home({ initialData, error }: HomeProps) {
   // Active Filter counts for Badges
   const getFilterCount = () => {
     let count = 0;
-    const { minPrice, maxPrice, categories, tenure, furnishings, isAuction } = router.query;
+    const { minPrice, maxPrice, categories, tenure, furnishings, isAuction, bedRooms, bathRooms } = router.query;
     if (minPrice) count++;
     if (maxPrice) count++;
-    if (categories) count++;
-    if (tenure) count++;
-    if (furnishings) count++;
+    if (categories) count += (categories as string).split(',').length;
+    if (tenure) count += (tenure as string).split(',').length;
+    if (furnishings) count += (furnishings as string).split(',').length;
     if (isAuction === 'true') count++;
+    if (bedRooms) count += (bedRooms as string).split(',').length;
+    if (bathRooms) count += (bathRooms as string).split(',').length;
     return count;
   };
 
@@ -107,11 +117,42 @@ export default function Home({ initialData, error }: HomeProps) {
   };
 
   const handleBedsBathsClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    // Initialize local state from current URL query
+    if (router.query.bedRooms) {
+      setBeds((router.query.bedRooms as string).split(','));
+    } else {
+      setBeds([]);
+    }
+    if (router.query.bathRooms) {
+      setBaths((router.query.bathRooms as string).split(','));
+    } else {
+      setBaths([]);
+    }
     setBedsBathsAnchor(event.currentTarget);
   };
 
-  const handleBedsBathsClose = () => {
-    setBedsBathsAnchor(null);
+  const getBedsBathsLabel = () => {
+    const bedsArr = router.query.bedRooms ? (router.query.bedRooms as string).split(',') : [];
+    const bathsArr = router.query.bathRooms ? (router.query.bathRooms as string).split(',') : [];
+
+    let label = "";
+
+    if (bedsArr.length === 1) {
+      label += `${bedsArr[0]} bed`;
+    } else if (bedsArr.length > 1) {
+      label += `${bedsArr.length} beds`;
+    }
+
+    if (bathsArr.length > 0) {
+      if (label) label += " & ";
+      if (bathsArr.length === 1) {
+        label += `${bathsArr[0]} bath`;
+      } else {
+        label += `${bathsArr.length} baths`;
+      }
+    }
+
+    return label || "Beds & Baths";
   };
 
   const handleSortClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -137,6 +178,10 @@ export default function Home({ initialData, error }: HomeProps) {
     return labels[sortValue] || 'Sort By';
   };
 
+  const handleBedsBathsClose = () => {
+    setBedsBathsAnchor(null);
+  };
+
   const handleBedsBathsApply = () => {
     handleBedsBathsClose();
 
@@ -153,6 +198,7 @@ export default function Home({ initialData, error }: HomeProps) {
   const handleBedsBathsClear = () => {
     setBeds([]);
     setBaths([]);
+    handleBedsBathsClose();
 
     const query = { ...router.query };
     delete query.bedRooms;
@@ -317,48 +363,75 @@ export default function Home({ initialData, error }: HomeProps) {
           />
 
           <Stack direction="row" spacing={1.5} sx={{ flexShrink: 0 }}>
-            <Button
-              variant="outlined"
-              startIcon={
-                <Badge badgeContent={getFilterCount()} color="primary" sx={{ '& .MuiBadge-badge': { right: -2, top: -2, fontSize: '0.65rem', height: 16, minWidth: 16 } }}>
-                  <FilterListIcon />
-                </Badge>
-              }
-              onClick={() => setMobileFiltersOpen(true)}
+            <Badge
+              badgeContent={getFilterCount()}
+              color="primary"
               sx={{
-                borderRadius: 1,
-                px: 3,
-                py: 1.5,
-                borderColor: '#E2E8F0',
-                color: 'text.primary',
-                fontWeight: 600,
-                textTransform: 'none',
-                '&:hover': { borderColor: 'primary.main', bgcolor: 'transparent' }
+                '& .MuiBadge-badge': {
+                  right: 4,
+                  top: 4,
+                  border: '2px solid white',
+                  height: 20,
+                  minWidth: 20,
+                  borderRadius: '50%',
+                  fontWeight: 700
+                }
               }}
             >
-              Filters
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={
-                <Badge badgeContent={getBedsBathsCount()} color="primary" sx={{ '& .MuiBadge-badge': { right: -2, top: -2, fontSize: '0.65rem', height: 16, minWidth: 16 } }}>
-                  <BedIcon />
-                </Badge>
-              }
-              onClick={handleBedsBathsClick}
+              <Button
+                variant="outlined"
+                startIcon={<FilterListIcon />}
+                onClick={() => setMobileFiltersOpen(true)}
+                sx={{
+                  borderRadius: 1,
+                  px: 3,
+                  py: 1.5,
+                  borderColor: getFilterCount() > 0 ? 'primary.main' : '#E2E8F0',
+                  color: getFilterCount() > 0 ? 'primary.main' : 'text.primary',
+                  bgcolor: getFilterCount() > 0 ? 'rgba(37, 99, 235, 0.04)' : 'transparent',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  '&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(37, 99, 235, 0.04)' }
+                }}
+              >
+                Filters
+              </Button>
+            </Badge>
+
+            <Badge
+              badgeContent={getBedsBathsCount()}
+              color="primary"
               sx={{
-                borderRadius: 1,
-                px: 3,
-                py: 1.5,
-                borderColor: '#E2E8F0',
-                color: 'text.primary',
-                fontWeight: 600,
-                textTransform: 'none',
-                '&:hover': { borderColor: 'primary.main', bgcolor: 'transparent' }
+                '& .MuiBadge-badge': {
+                  right: 4,
+                  top: 4,
+                  border: '2px solid white',
+                  height: 20,
+                  minWidth: 20,
+                  borderRadius: '50%',
+                  fontWeight: 700
+                }
               }}
             >
-              Beds & Baths
-            </Button>
+              <Button
+                variant="outlined"
+                startIcon={<BathtubIcon />}
+                onClick={handleBedsBathsClick}
+                sx={{
+                  borderRadius: 1,
+                  px: 3,
+                  py: 1.5,
+                  borderColor: router.query.bedRooms || router.query.bathRooms ? 'primary.main' : '#E2E8F0',
+                  color: router.query.bedRooms || router.query.bathRooms ? 'primary.main' : 'text.primary',
+                  bgcolor: router.query.bedRooms || router.query.bathRooms ? 'rgba(37, 99, 235, 0.04)' : 'transparent',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  '&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(37, 99, 235, 0.04)' }
+                }}
+              >
+                {getBedsBathsLabel()}
+              </Button>
+            </Badge>
           </Stack>
 
           <Popover
@@ -367,7 +440,7 @@ export default function Home({ initialData, error }: HomeProps) {
             onClose={handleBedsBathsClose}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
             transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-            PaperProps={{ sx: { p: 3, width: 320, borderRadius: 4, mt: 1, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' } }}
+            PaperProps={{ sx: { p: 3, width: 320, borderRadius: 1.5, mt: 1, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' } }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography sx={{ fontWeight: 700 }}>Beds & Baths</Typography>
@@ -400,7 +473,7 @@ export default function Home({ initialData, error }: HomeProps) {
               fullWidth
               variant="contained"
               onClick={handleBedsBathsApply}
-              sx={{ mt: 3, py: 1, borderRadius: 2, fontWeight: 700 }}
+              sx={{ mt: 3, py: 1.5, borderRadius: 1, fontWeight: 700 }}
             >
               Apply
             </Button>
@@ -689,24 +762,36 @@ export default function Home({ initialData, error }: HomeProps) {
         </Grid>
       </Container>
 
-      {/* Filters Drawer/Modal */}
-      <Drawer
-        anchor="right"
+      {/* Filters Modal */}
+      <Dialog
         open={mobileFiltersOpen}
         onClose={() => setMobileFiltersOpen(false)}
-        PaperProps={{ sx: { width: { xs: '100%', sm: 400 } } }}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 1,
+            maxHeight: '90vh',
+          }
+        }}
       >
-        <Box sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>Filter Properties</Typography>
-            <IconButton onClick={() => setMobileFiltersOpen(false)}><NavigateNextIcon /></IconButton>
-          </Box>
+        <DialogTitle sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <FilterListIcon sx={{ color: 'text.primary' }} />
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>Filter Properties</Typography>
+          </Stack>
+          <IconButton onClick={() => setMobileFiltersOpen(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 3 }}>
           <Filters
             onFilterChange={handleFilterChange}
             initialFilters={getCurrentFilters()}
+            onClose={() => setMobileFiltersOpen(false)}
           />
-        </Box>
-      </Drawer>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }
