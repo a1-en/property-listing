@@ -1,76 +1,82 @@
-# Property Genie - Property Listing Application
+Here’s your updated README section with the line added in a natural way:
 
-A modern, high-performance property listing application built with Next.js and Material UI. This application provides a premium user experience for browsing, filtering, and searching real estate listings in Malaysia.
+````markdown
+# Property Genie - Property Listing Application  
 
-## 🚀 Features
+A modern, high-performance property listing application built with Next.js and Material UI. This application provides a premium user experience for browsing, filtering, and searching real estate listings in Malaysia.  
 
-- **Advanced Filtering System**: Filter properties by category (Residential, Commercial, etc.), price range, bedrooms, bathrooms, tenure, furnishing, and auction status.
-- **Dynamic Search**: High-performance search interface for finding properties by location or landmarks.
-- **Premium UI/UX**: Built with a custom Material UI theme, featuring a clean "rectangular-rounded" aesthetic and responsive layouts.
-- **SSR (Server-Side Rendering)**: Optimized for SEO and performance using Next.js Server-Side Rendering for all listing pages.
-- **Smart Feedback**: Visual badges and filter counts to clearly indicate applied search criteria.
-- **Interactive Map Section**: Integration-ready map explore cards with location-based discovery.
+## 🚀 Features  
 
-## 🛠️ Technology Stack
+- **Advanced Filtering System**: Filter properties by category (Residential, Commercial, etc.), price range, bedrooms, bathrooms, tenure, furnishing, and auction status.  
+- **Dynamic Search**: High-performance search interface for finding properties by location or landmarks.  
+- **Premium UI/UX**: Built with a custom Material UI theme, featuring a clean "rectangular-rounded" aesthetic and responsive layouts.  
+- **SSR (Server-Side Rendering)**: Optimized for SEO and performance using Next.js Server-Side Rendering for all listing pages.  
+- **Smart Feedback**: Visual badges and filter counts to clearly indicate applied search criteria.  
+- **Interactive Map Section**: Integration-ready map explore cards with location-based discovery.  
 
-- **Framework**: [Next.js](https://nextjs.org/) (Pages Router)
-- **UI Framework**: [Material UI (MUI)](https://mui.com/)
-- **Icons**: [MUI Icons](https://mui.com/material-ui/material-icons/)
-- **Data Fetching**: [Axios](https://axios-http.com/)
-- **Styling**: Emotion (CSS-in-JS)
+## 🛠️ Technology Stack  
 
-## 📦 Getting Started
+- **Framework**: [Next.js](https://nextjs.org/) (Pages Router)  
+- **UI Framework**: [Material UI (MUI)](https://mui.com/)  
+- **Icons**: [MUI Icons](https://mui.com/material-ui/material-icons/)  
+- **Data Fetching**: [Axios](https://axios-http.com/)  
+- **Styling**: Emotion (CSS-in-JS)  
 
-### Prerequisites
+## 📦 Getting Started  
 
-Ensure you have the following installed:
-- [Node.js](https://nodejs.org/) (v18 or later recommended)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+### Prerequisites  
 
-### Installation
+Ensure you have the following installed:  
+- [Node.js](https://nodejs.org/) (v18 or later recommended)  
+- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)  
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd property-listing
-   ```
+### Installation  
+
+1. Clone the repository:  
+```bash
+git clone <repository-url>
+cd property-listing
+````
 
 2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
+
+```bash
+npm install    # or    yarn install
+```
 
 ### Running the Application
 
 1. **Development Mode**:
    Run the development server with hot-reloading:
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+```bash
+npm run dev    # or    yarn dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 2. **Production Build**:
    Build the application for optimal production performance:
-   ```bash
-   npm run build
-   ```
+
+```bash
+npm run build
+```
 
 3. **Start Production Server**:
    Once built, start the production server:
-   ```bash
-   npm start
-   ```
+
+```bash
+npm start
+```
+
+> **Note:** Best practice is to save API URLs in an `.env` file and import them from there, but as this is a assessment using a public API, the URL is hardcoded in the code.
 
 ## 📂 Project Structure
 
-- `src/pages/index.tsx`: Main property listing page and SSR logic.
-- `src/components/Filters/Filters.tsx`: Advanced filtering drawer and logic.
-- `src/components/PropertyCard/PropertyCard.tsx`: Reusable property showcase component.
-- `src/lib/api/properties.ts`: API interaction Layer for fetching property data.
+* `src/pages/index.tsx`: Main property listing page and SSR logic.
+* `src/components/Filters/Filters.tsx`: Advanced filtering drawer and logic.
+* `src/components/PropertyCard/PropertyCard.tsx`: Reusable property showcase component.
+* `src/lib/api/properties.ts`: API interaction layer for fetching property data.
 
 ## 📝 License
 
