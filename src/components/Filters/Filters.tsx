@@ -10,6 +10,9 @@ import {
     Stack,
     ToggleButtonGroup,
     ToggleButton,
+    Checkbox,
+    FormControlLabel,
+    FormGroup,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -17,9 +20,10 @@ import GrassIcon from '@mui/icons-material/Grass';
 import FactoryIcon from '@mui/icons-material/Factory';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import AppsIcon from '@mui/icons-material/Apps';
-import { PropertyFilters } from '@/lib/api/properties';
+import { PropertyFilters, PropertyTypeOption } from '@/lib/api/properties';
 
 interface FiltersProps {
+    propertyTypes?: PropertyTypeOption[];
     onFilterChange: (filters: PropertyFilters) => void;
     initialFilters?: PropertyFilters;
     onClose?: () => void;
@@ -47,10 +51,11 @@ const FURNISHINGS = [
     { label: 'N/A', value: 'na' }
 ];
 
-const Filters: React.FC<FiltersProps> = ({ onFilterChange, initialFilters = {}, onClose }) => {
+const Filters: React.FC<FiltersProps> = ({ propertyTypes = [], onFilterChange, initialFilters = {}, onClose }) => {
     const [minPrice, setMinPrice] = useState<string>(initialFilters.minPrice?.toString() || '');
     const [maxPrice, setMaxPrice] = useState<string>(initialFilters.maxPrice?.toString() || '');
     const [category, setCategory] = useState<string>(initialFilters.categories?.[0] || 'all');
+    const [selectedTypes, setSelectedTypes] = useState<string[]>(initialFilters.types || []);
     const [bedrooms, setBedrooms] = useState<string[]>(initialFilters.bedRooms?.map(b => b === 0 ? 'Studio' : b.toString()) || []);
     const [bathrooms, setBathrooms] = useState<string[]>(initialFilters.bathRooms?.map(b => b.toString()) || []);
     const [tenure, setTenure] = useState<string[]>(initialFilters.tenure || []);
@@ -60,6 +65,7 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange, initialFilters = {}, 
     const handleApplyFilters = () => {
         const filters: PropertyFilters = {
             ...(category !== 'all' && { categories: [category] }),
+            ...(selectedTypes.length > 0 && { types: selectedTypes }),
             ...(minPrice && { minPrice: parseFloat(minPrice) }),
             ...(maxPrice && { maxPrice: parseFloat(maxPrice) }),
             ...(bedrooms.length > 0 && {
@@ -80,12 +86,27 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange, initialFilters = {}, 
         setMinPrice('');
         setMaxPrice('');
         setCategory('all');
+        setSelectedTypes([]);
         setBedrooms([]);
         setBathrooms([]);
         setTenure([]);
         setFurnishing([]);
         setIsAuction(false);
         onFilterChange({});
+    };
+
+    const toggleType = (value: string) => {
+        setSelectedTypes((prev) =>
+            prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
+        );
+    };
+
+    const selectAllTypes = () => {
+        if (selectedTypes.length === propertyTypes.length) {
+            setSelectedTypes([]);
+        } else {
+            setSelectedTypes(propertyTypes.map((t) => t.value));
+        }
     };
 
     const toggleMultiSelect = (val: string, current: string[], setter: (v: string[]) => void) => {
@@ -176,6 +197,45 @@ const Filters: React.FC<FiltersProps> = ({ onFilterChange, initialFilters = {}, 
                         ))}
                     </Box>
                 </Box>
+
+                {/* Select Property Types - from API */}
+                {propertyTypes.length > 0 && (
+                    <Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, color: '#1E293B' }}>Select Property Types</Typography>
+                        <FormGroup sx={{ gap: 0.5 }}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={selectedTypes.length === propertyTypes.length}
+                                        indeterminate={selectedTypes.length > 0 && selectedTypes.length < propertyTypes.length}
+                                        onChange={selectAllTypes}
+                                        sx={{ color: '#64748B', '&.Mui-checked': { color: 'primary.main' } }}
+                                    />
+                                }
+                                label={
+                                    <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1E293B' }}>
+                                        All {category !== 'all' ? CATEGORIES.find((c) => c.value === category)?.label || 'Properties' : 'Properties'}
+                                    </Typography>
+                                }
+                            />
+                            {propertyTypes.map((opt) => (
+                                <FormControlLabel
+                                    key={opt.value}
+                                    control={
+                                        <Checkbox
+                                            checked={selectedTypes.includes(opt.value)}
+                                            onChange={() => toggleType(opt.value)}
+                                            sx={{ color: '#64748B', '&.Mui-checked': { color: 'primary.main' } }}
+                                        />
+                                    }
+                                    label={
+                                        <Typography sx={{ fontSize: '0.875rem', color: '#64748B' }}>{opt.label}</Typography>
+                                    }
+                                />
+                            ))}
+                        </FormGroup>
+                    </Box>
+                )}
 
                 {/* Bedrooms */}
                 <Box>
