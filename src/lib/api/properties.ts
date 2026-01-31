@@ -14,6 +14,7 @@ export interface PropertyFilters {
     furnishings?: string[];
     tenure?: string[];
     isAuction?: boolean;
+    location?: string;
 }
 
 export interface PropertyQueryParams {

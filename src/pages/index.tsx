@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -40,8 +40,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Tooltip,
+  Snackbar,
 } from '@mui/material';
 
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import HistoryIcon from '@mui/icons-material/History';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import BedIcon from '@mui/icons-material/Bed';
@@ -52,6 +58,7 @@ import MapIcon from '@mui/icons-material/Map';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import CheckIcon from '@mui/icons-material/Check';
+import BusinessIcon from '@mui/icons-material/Business';
 import {
   Sort as SortIcon,
   Close as CloseIcon,
@@ -76,12 +83,25 @@ export default function Home({ initialData, error }: HomeProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [savedSearchesOpen, setSavedSearchesOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [listingType, setListingType] = useState('sale');
   const [bedsBathsAnchor, setBedsBathsAnchor] = useState<null | HTMLElement>(null);
   const [beds, setBeds] = useState<string[]>([]);
   const [baths, setBaths] = useState<string[]>([]);
   const [sortAnchor, setSortAnchor] = useState<null | HTMLElement>(null);
+  const [locationSearch, setLocationSearch] = useState(router.query.location?.toString() || '');
+  const [nameSearch, setNameSearch] = useState(router.query.name?.toString() || '');
+  const [savedSearches, setSavedSearches] = useState<any[]>([]);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  // Load saved searches on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('saved_searches');
+    if (saved) {
+      setSavedSearches(JSON.parse(saved));
+    }
+  }, []);
 
   const openBedsBaths = Boolean(bedsBathsAnchor);
   const openSort = Boolean(sortAnchor);
@@ -210,6 +230,70 @@ export default function Home({ initialData, error }: HomeProps) {
     });
   };
 
+  // Handle search action
+  const handleSearch = () => {
+    const query: any = { ...router.query, page: 1 };
+    if (locationSearch) query.location = locationSearch;
+    else delete query.location;
+    if (nameSearch) query.name = nameSearch;
+    else delete query.name;
+
+    router.push({
+      pathname: '/',
+      query
+    });
+  };
+
+  const handleSaveSearch = () => {
+    // Generate a descriptive name if name/location are empty
+    let generatedName = nameSearch || locationSearch;
+
+    if (!generatedName) {
+      const filters = getCurrentFilters();
+      const bedsBaths = getBedsBathsLabel();
+
+      const parts = [];
+      if (filters.categories) parts.push(filters.categories[0]);
+      if (bedsBaths !== "Beds & Baths") parts.push(bedsBaths);
+      if (filters.minPrice || filters.maxPrice) parts.push("Price Filter");
+
+      generatedName = parts.length > 0 ? parts.join(' - ') : 'General Search';
+    }
+
+    // Don't save if there are literally no filters and no search terms
+    if (generatedName === 'General Search' && getFilterCount() === 0 && getBedsBathsCount() === 0) {
+      return;
+    }
+
+    const newSave = {
+      id: Date.now(),
+      name: generatedName,
+      query: { ...router.query, location: locationSearch, name: nameSearch },
+      timestamp: new Date().toISOString(),
+      filters: getFilterCount() + getBedsBathsCount()
+    };
+    const updated = [newSave, ...savedSearches];
+    setSavedSearches(updated);
+    localStorage.setItem('saved_searches', JSON.stringify(updated));
+    setSnackbarOpen(true);
+  };
+
+  const handleDeleteSavedSearch = (id: number) => {
+    const updated = savedSearches.filter(s => s.id !== id);
+    setSavedSearches(updated);
+    localStorage.setItem('saved_searches', JSON.stringify(updated));
+  };
+
+  const applySavedSearch = (search: any) => {
+    setLocationSearch(search.query.location || '');
+    setNameSearch(search.query.name || '');
+    router.push({
+      pathname: '/',
+      query: search.query
+    });
+    setSavedSearchesOpen(false);
+  };
+
   // Handle sorting change
   const handleSortChange = (newSort: string) => {
     router.push({
@@ -334,104 +418,202 @@ export default function Home({ initialData, error }: HomeProps) {
           sx={{
             p: 2,
             mb: 4,
-            borderRadius: 1.5,
+            borderRadius: 1,
             border: '1px solid #E2E8F0',
             display: 'flex',
-            flexWrap: 'wrap',
+            flexDirection: { xs: 'column', lg: 'row' },
             gap: 2,
-            alignItems: 'center'
+            alignItems: 'center',
+            bgcolor: 'white'
           }}
         >
-          <TextField
-            fullWidth
-            placeholder="Search by location, area or landmark"
-            variant="outlined"
-            sx={{
-              flex: { xs: '1 1 100%', md: '1 1 0' },
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 1,
-                bgcolor: '#FBFDFF'
-              }
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <LocationOnIcon sx={{ color: 'primary.main' }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <Stack direction="row" spacing={1.5} sx={{ flexShrink: 0 }}>
-            <Badge
-              badgeContent={getFilterCount()}
-              color="primary"
+          {/* Advanced Search: Location + Name */}
+          <Box sx={{ display: 'flex', flex: 1, gap: 2, width: '100%', flexDirection: { xs: 'column', md: 'row' } }}>
+            <TextField
+              fullWidth
+              placeholder="Search Locations (City, State)"
+              value={locationSearch}
+              onChange={(e) => setLocationSearch(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               sx={{
-                '& .MuiBadge-badge': {
-                  right: 4,
-                  top: 4,
-                  border: '2px solid white',
-                  height: 20,
-                  minWidth: 20,
-                  borderRadius: '50%',
-                  fontWeight: 700
+                flex: 1,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1,
+                  bgcolor: '#FBFDFF'
                 }
               }}
-            >
-              <Button
-                variant="outlined"
-                startIcon={<FilterListIcon />}
-                onClick={() => setMobileFiltersOpen(true)}
-                sx={{
-                  borderRadius: 1,
-                  px: 3,
-                  py: 1.5,
-                  borderColor: getFilterCount() > 0 ? 'primary.main' : '#E2E8F0',
-                  color: getFilterCount() > 0 ? 'primary.main' : 'text.primary',
-                  bgcolor: getFilterCount() > 0 ? 'rgba(37, 99, 235, 0.04)' : 'transparent',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  '&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(37, 99, 235, 0.04)' }
-                }}
-              >
-                Filters
-              </Button>
-            </Badge>
-
-            <Badge
-              badgeContent={getBedsBathsCount()}
-              color="primary"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LocationOnIcon sx={{ color: 'primary.main' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              fullWidth
+              placeholder="Search Project or Property Name"
+              value={nameSearch}
+              onChange={(e) => setNameSearch(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               sx={{
-                '& .MuiBadge-badge': {
-                  right: 4,
-                  top: 4,
-                  border: '2px solid white',
-                  height: 20,
-                  minWidth: 20,
-                  borderRadius: '50%',
-                  fontWeight: 700
+                flex: 1,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1,
+                  bgcolor: '#FBFDFF'
                 }
               }}
-            >
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <BusinessIcon sx={{ color: 'primary.main' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Tooltip title="Apply location and name filters" arrow>
               <Button
-                variant="outlined"
-                startIcon={<BathtubIcon />}
-                onClick={handleBedsBathsClick}
+                variant="contained"
+                onClick={handleSearch}
                 sx={{
                   borderRadius: 1,
-                  px: 3,
+                  px: 4,
                   py: 1.5,
-                  borderColor: router.query.bedRooms || router.query.bathRooms ? 'primary.main' : '#E2E8F0',
-                  color: router.query.bedRooms || router.query.bathRooms ? 'primary.main' : 'text.primary',
-                  bgcolor: router.query.bedRooms || router.query.bathRooms ? 'rgba(37, 99, 235, 0.04)' : 'transparent',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  '&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(37, 99, 235, 0.04)' }
+                  boxShadow: 'none',
+                  height: { md: 56 },
+                  minWidth: 120
                 }}
               >
-                {getBedsBathsLabel()}
+                Search
               </Button>
-            </Badge>
+            </Tooltip>
+          </Box>
+
+          <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', lg: 'block' }, mx: 1 }} />
+
+          <Stack direction="row" spacing={1.5} sx={{ flexShrink: 0, width: { xs: '100%', lg: 'auto' }, justifyContent: 'space-between' }}>
+            <Stack direction="row" spacing={1.5}>
+              <Tooltip title="View all filter options" arrow>
+                <Badge
+                  badgeContent={getFilterCount()}
+                  color="primary"
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      right: 4,
+                      top: 4,
+                      border: '2px solid white',
+                      height: 20,
+                      minWidth: 20,
+                      borderRadius: '50%',
+                      fontWeight: 700
+                    }
+                  }}
+                >
+                  <Button
+                    variant="outlined"
+                    startIcon={<FilterListIcon />}
+                    onClick={() => setMobileFiltersOpen(true)}
+                    sx={{
+                      borderRadius: 1,
+                      px: 3,
+                      py: 1.5,
+                      borderColor: getFilterCount() > 0 ? 'primary.main' : '#E2E8F0',
+                      color: getFilterCount() > 0 ? 'primary.main' : 'text.primary',
+                      bgcolor: getFilterCount() > 0 ? 'rgba(37, 99, 235, 0.04)' : 'transparent',
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      '&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(37, 99, 235, 0.04)' }
+                    }}
+                  >
+                    Filters
+                  </Button>
+                </Badge>
+              </Tooltip>
+
+              <Tooltip title="Quick Bedroom & Bathroom selection" arrow>
+                <Badge
+                  badgeContent={getBedsBathsCount()}
+                  color="primary"
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      right: 4,
+                      top: 4,
+                      border: '2px solid white',
+                      height: 20,
+                      minWidth: 20,
+                      borderRadius: '50%',
+                      fontWeight: 700
+                    }
+                  }}
+                >
+                  <Button
+                    variant="outlined"
+                    startIcon={<BathtubIcon />}
+                    onClick={handleBedsBathsClick}
+                    sx={{
+                      borderRadius: 1,
+                      px: 3,
+                      py: 1.5,
+                      borderColor: router.query.bedRooms || router.query.bathRooms ? 'primary.main' : '#E2E8F0',
+                      color: router.query.bedRooms || router.query.bathRooms ? 'primary.main' : 'text.primary',
+                      bgcolor: router.query.bedRooms || router.query.bathRooms ? 'rgba(37, 99, 235, 0.04)' : 'transparent',
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      '&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(37, 99, 235, 0.04)' }
+                    }}
+                  >
+                    {getBedsBathsLabel()}
+                  </Button>
+                </Badge>
+              </Tooltip>
+            </Stack>
+
+            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+
+            <Stack direction="row" spacing={1}>
+              <Tooltip title="Save these search criteria" arrow>
+                <IconButton
+                  onClick={handleSaveSearch}
+                  sx={{
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 1,
+                    p: 1.5,
+                    color: 'primary.main'
+                  }}
+                >
+                  <BookmarkBorderIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="View Saved & Recent searches" arrow>
+                <Badge
+                  badgeContent={savedSearches.length}
+                  color="primary"
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      right: 4,
+                      top: 4,
+                      border: '2px solid white',
+                      height: 20,
+                      minWidth: 20,
+                      borderRadius: '50%',
+                      fontWeight: 700
+                    }
+                  }}
+                >
+                  <IconButton
+                    onClick={() => setSavedSearchesOpen(true)}
+                    sx={{
+                      border: '1px solid #E2E8F0',
+                      borderRadius: 1,
+                      p: 1.5,
+                      color: 'text.secondary'
+                    }}
+                  >
+                    <HistoryIcon />
+                  </IconButton>
+                </Badge>
+              </Tooltip>
+            </Stack>
           </Stack>
 
           <Popover
@@ -513,24 +695,26 @@ export default function Home({ initialData, error }: HomeProps) {
               </Typography>
 
               <Stack direction="row" spacing={2} alignItems="center">
-                <Button
-                  variant="outlined"
-                  startIcon={<SortIcon />}
-                  onClick={handleSortClick}
-                  sx={{
-                    borderRadius: 1,
-                    px: 2,
-                    py: 1,
-                    borderColor: '#E2E8F0',
-                    color: 'text.primary',
-                    fontWeight: 500,
-                    textTransform: 'none',
-                    bgcolor: 'white',
-                    '&:hover': { borderColor: 'primary.main', bgcolor: '#F8FAFC' }
-                  }}
-                >
-                  {getSortLabel(currentSort)}
-                </Button>
+                <Tooltip title="Change listing order" arrow>
+                  <Button
+                    variant="outlined"
+                    startIcon={<SortIcon />}
+                    onClick={handleSortClick}
+                    sx={{
+                      borderRadius: 1,
+                      px: 2,
+                      py: 1,
+                      borderColor: '#E2E8F0',
+                      color: 'text.primary',
+                      fontWeight: 500,
+                      textTransform: 'none',
+                      bgcolor: 'white',
+                      '&:hover': { borderColor: 'primary.main', bgcolor: '#F8FAFC' }
+                    }}
+                  >
+                    {getSortLabel(currentSort)}
+                  </Button>
+                </Tooltip>
 
                 <Popover
                   open={openSort}
@@ -593,8 +777,16 @@ export default function Home({ initialData, error }: HomeProps) {
                   size="small"
                   sx={{ bgcolor: 'white' }}
                 >
-                  <ToggleButton value="grid"><GridViewIcon fontSize="small" /></ToggleButton>
-                  <ToggleButton value="list"><ViewListIcon fontSize="small" /></ToggleButton>
+                  <ToggleButton value="grid">
+                    <Tooltip title="Grid View" arrow>
+                      <GridViewIcon fontSize="small" />
+                    </Tooltip>
+                  </ToggleButton>
+                  <ToggleButton value="list">
+                    <Tooltip title="List View" arrow>
+                      <ViewListIcon fontSize="small" />
+                    </Tooltip>
+                  </ToggleButton>
                 </ToggleButtonGroup>
               </Stack>
             </Box>
@@ -792,7 +984,101 @@ export default function Home({ initialData, error }: HomeProps) {
           />
         </DialogContent>
       </Dialog>
-    </Box>
+
+      {/* Saved Searches Drawer */}
+      <Drawer
+        anchor="right"
+        open={savedSearchesOpen}
+        onClose={() => setSavedSearchesOpen(false)}
+        PaperProps={{
+          sx: { width: { xs: '100%', sm: 400 }, borderRadius: '12px 0 0 12px' }
+        }}
+      >
+        <Box sx={{ p: 3 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={4}>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Saved Searches</Typography>
+              <Typography variant="body2" color="text.secondary">Access your recent and saved filters</Typography>
+            </Box>
+            <IconButton onClick={() => setSavedSearchesOpen(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+
+          <Stack spacing={2}>
+            {savedSearches.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <BookmarkBorderIcon sx={{ fontSize: 48, color: '#E2E8F0', mb: 2 }} />
+                <Typography color="text.secondary">No saved searches yet</Typography>
+                <Typography variant="caption" color="text.secondary">Click the bookmark icon to save a search</Typography>
+              </Box>
+            ) : (
+              savedSearches.map((search: any) => (
+                <Paper
+                  key={search.id}
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    borderRadius: 1.5,
+                    cursor: 'pointer',
+                    '&:hover': { borderColor: 'primary.main', bgcolor: '#F8FAFC' },
+                    position: 'relative'
+                  }}
+                  onClick={() => applySavedSearch(search)}
+                >
+                  <Box sx={{ pr: 4 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }} noWrap>
+                      {search.name}
+                    </Typography>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <HistoryIcon sx={{ fontSize: 14 }} />
+                        {new Date(search.timestamp).toLocaleDateString()}
+                      </Typography>
+                      {search.filters > 0 && (
+                        <Chip
+                          label={`${search.filters} filters`}
+                          size="small"
+                          sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
+                          color="primary"
+                          variant="outlined"
+                        />
+                      )}
+                    </Stack>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    sx={{ position: 'absolute', top: 12, right: 12, color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSavedSearch(search.id);
+                    }}
+                  >
+                    <DeleteOutlineIcon fontSize="small" />
+                  </IconButton>
+                </Paper>
+              ))
+            )}
+          </Stack>
+        </Box>
+      </Drawer>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        message="Searched results are saved"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        ContentProps={{
+          sx: {
+            bgcolor: 'primary.main',
+            color: 'white',
+            fontWeight: 600,
+            borderRadius: 1,
+          }
+        }}
+      />
+    </Box >
   );
 }
 
@@ -809,7 +1095,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       bathRooms,
       tenure,
       furnishings,
-      isAuction
+      isAuction,
+      location,
+      name
     } = context.query;
 
     // Build filters from query params
@@ -817,6 +1105,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     if (minPrice) filters.minPrice = parseFloat(minPrice as string);
     if (maxPrice) filters.maxPrice = parseFloat(maxPrice as string);
     if (categories) filters.categories = (categories as string).split(',');
+    if (location) filters.location = location as string;
+    if (name) filters.name = name as string;
 
     // Section handle
     if (section === 'rent') filters.section = 'rent';
