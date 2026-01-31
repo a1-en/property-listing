@@ -42,6 +42,8 @@ export interface Property {
         email: string;
         phone: string;
         slug: string;
+        avatar?: string;
+        verified?: boolean;
     };
     country: string;
     state: string;
@@ -52,6 +54,7 @@ export interface Property {
         longitude: number;
         latitude: number;
     };
+    isAuction?: boolean;
     createdAt: string;
 }
 
