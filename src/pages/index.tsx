@@ -448,6 +448,21 @@ export default function Home({ initialData, error }: HomeProps) {
                     <LocationOnIcon sx={{ color: 'primary.main' }} />
                   </InputAdornment>
                 ),
+                endAdornment: locationSearch && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setLocationSearch('');
+                        const query = { ...router.query };
+                        delete query.location;
+                        router.push({ pathname: '/', query });
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </InputAdornment>
+                )
               }}
             />
             <TextField
@@ -469,6 +484,21 @@ export default function Home({ initialData, error }: HomeProps) {
                     <BusinessIcon sx={{ color: 'primary.main' }} />
                   </InputAdornment>
                 ),
+                endAdornment: nameSearch && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setNameSearch('');
+                        const query = { ...router.query };
+                        delete query.name;
+                        router.push({ pathname: '/', query });
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </InputAdornment>
+                )
               }}
             />
             <Tooltip title="Apply location and name filters" arrow>
@@ -775,14 +805,31 @@ export default function Home({ initialData, error }: HomeProps) {
                   exclusive
                   onChange={(e, val) => val && setViewMode(val)}
                   size="small"
-                  sx={{ bgcolor: 'white' }}
+                  sx={{
+                    bgcolor: 'white',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    height: 40,
+                    '& .MuiToggleButton-root': {
+                      border: 'none',
+                      borderRadius: 0,
+                      width: 48,
+                      color: '#94A3B8',
+                      '&.Mui-selected': {
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        '&:hover': { bgcolor: 'primary.dark' }
+                      }
+                    }
+                  }}
                 >
                   <ToggleButton value="grid">
                     <Tooltip title="Grid View" arrow>
                       <GridViewIcon fontSize="small" />
                     </Tooltip>
                   </ToggleButton>
-                  <ToggleButton value="list">
+                  <ToggleButton value="list" sx={{ borderLeft: '1px solid #E2E8F0 !important' }}>
                     <Tooltip title="List View" arrow>
                       <ViewListIcon fontSize="small" />
                     </Tooltip>
