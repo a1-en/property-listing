@@ -1189,24 +1189,21 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const categoryForTypes = (categories as string)?.split(',')?.[0] || undefined;
     const propertyTypes = await fetchPropertyTypes(categoryForTypes);
 
-    // Fetch properties (API supports: section, name, categories, types, bedRooms, bathRooms, minPrice, maxPrice, furnishings)
+    // When user searches by location/city/state: API has no "location" and "name" filters by property title only.
+    // So we fetch WITHOUT name, then filter client-side by city, state, address, etc.
+    const filtersForFetch = searchTerm ? (() => {
+      const f = { ...apiFilters };
+      delete f.name;
+      return f;
+    })() : apiFilters;
+
     let data = await fetchProperties(
       {
         page: parseInt(page as string, 10),
         sort: getSortValue(sort as string),
       },
-      apiFilters
+      filtersForFetch
     );
-
-    // Location search: API has no "location" field. If user searched by location and API returned 0 (e.g. name: "kuala lumpur" matches no property title), fetch without name and filter client-side.
-    if (searchTerm && data?.items?.length === 0) {
-      const fallbackFilters = { ...apiFilters };
-      delete fallbackFilters.name;
-      data = await fetchProperties(
-        { page: parseInt(page as string, 10), sort: getSortValue(sort as string) },
-        fallbackFilters
-      );
-    }
 
     // Defensive check to handle different API response formats
     let properties: any[] = [];
@@ -1229,15 +1226,28 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       totalPages = 1;
     }
 
-    // Client-side filter by search term (location/name) when API doesn't filter or returned broad results
+    // Client-side filter by city, state, address, name when user searched by location
     if (searchTerm && properties.length > 0) {
+      const words = searchTerm.split(/\s+/).filter(Boolean);
+      const matchesTerm = (text: string) => {
+        const t = (text || '').toLowerCase();
+        return words.every((w) => t.includes(w));
+      };
       const filtered = properties.filter((p: any) => {
-        const nameMatch = (p.name || '').toLowerCase().includes(searchTerm);
-        const addressMatch = (p.address || '').toLowerCase().includes(searchTerm);
-        const cityMatch = (p.city || '').toLowerCase().includes(searchTerm);
-        const stateMatch = (p.state || '').toLowerCase().includes(searchTerm);
-        const countryMatch = (p.country || '').toLowerCase().includes(searchTerm);
-        return nameMatch || addressMatch || cityMatch || stateMatch || countryMatch;
+        const city = p.city ?? p.location?.city ?? '';
+        const state = p.state ?? p.location?.state ?? '';
+        const address = p.address ?? '';
+        const name = p.name ?? '';
+        const country = p.country ?? '';
+        const postcode = (p.postcode ?? '').toString();
+        return (
+          matchesTerm(name) ||
+          matchesTerm(address) ||
+          matchesTerm(city) ||
+          matchesTerm(state) ||
+          matchesTerm(country) ||
+          matchesTerm(postcode)
+        );
       });
       properties = filtered;
       total = filtered.length;
