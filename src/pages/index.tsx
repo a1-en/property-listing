@@ -434,9 +434,9 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
         <meta name="description" content="Browse thousands of properties for sale and rent in Malaysia" />
       </Head>
 
-      <Container maxWidth="xl" sx={{ py: 3 }}>
+      <Container maxWidth="xl" sx={{ py: 3, overflow: 'hidden', minWidth: 0 }}>
         {/* Breadcrumbs */}
-        <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ mb: 3 }}>
+        <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ mb: 3, flexWrap: 'wrap' }}>
           <Link underline="hover" color="inherit" href="/" sx={{ fontSize: '0.9rem' }}>Home</Link>
           <Typography color="text.primary" sx={{ fontSize: '0.9rem', fontWeight: 500 }}>Properties for {listingType === 'rent' ? 'Rent' : 'Sale'}</Typography>
         </Breadcrumbs>
@@ -452,12 +452,24 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
             display: 'flex',
             flexDirection: { xs: 'column', lg: 'row' },
             gap: 1.5,
-            alignItems: 'center',
-            bgcolor: 'white'
+            alignItems: 'stretch',
+            bgcolor: 'white',
+            overflow: 'hidden',
+            minWidth: 0
           }}
         >
-          {/* Location Search Case */}
-          <Box sx={{ display: 'flex', flex: 1, width: '100%', alignItems: 'center', gap: 1.5 }}>
+          {/* Location Search Case - stack on mobile to prevent horizontal overflow */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              flex: 1,
+              width: '100%',
+              minWidth: 0,
+              gap: 1.5,
+              alignItems: { xs: 'stretch', md: 'center' }
+            }}
+          >
             <TextField
               fullWidth
               placeholder="Search by property name, location, area or landmark"
@@ -509,12 +521,13 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
                 textTransform: 'none',
                 fontWeight: 700,
                 boxShadow: 'none',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                flexShrink: { xs: 0, md: 0 }
               }}
             >
               Search
             </Button>
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" spacing={1.5} alignItems="center" useFlexGap sx={{ flexWrap: 'wrap', minWidth: 0 }}>
               <Tooltip title="View all filter options" arrow>
                 <Badge
                   badgeContent={getFilterCount()}
@@ -713,13 +726,23 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
         <Grid container spacing={4}>
           {/* Main Content Area */}
           <Grid size={{ xs: 12, lg: 9 }}>
-            {/* Header Controls */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h5" sx={{ fontWeight: 800 }}>
+            {/* Header Controls - stack on mobile to prevent overlap */}
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
+                alignItems: { xs: 'stretch', sm: 'center' },
+                gap: 2,
+                mb: 3,
+                minWidth: 0
+              }}
+            >
+              <Typography variant="h5" sx={{ fontWeight: 800, minWidth: 0 }}>
                 {initialData?.total?.toLocaleString()} Properties for {listingType === 'rent' ? 'Rent' : 'Sale'} in Malaysia
               </Typography>
 
-              <Stack direction="row" spacing={2} alignItems="center">
+              <Stack direction="row" spacing={2} alignItems="center" sx={{ flexShrink: 0 }}>
                 <Tooltip title="Change listing order" arrow>
                   <Button
                     variant="outlined"
