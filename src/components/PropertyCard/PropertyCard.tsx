@@ -15,6 +15,7 @@ import BedIcon from '@mui/icons-material/Bed';
 import BathtubIcon from '@mui/icons-material/Bathtub';
 import SquareFootIcon from '@mui/icons-material/SquareFoot';
 import IosShareIcon from '@mui/icons-material/IosShare';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import GavelIcon from '@mui/icons-material/Gavel';
@@ -117,12 +118,28 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, viewMode = 'grid'
                     </Box>
                 )}
 
-                {/* Share Button Overlay */}
+                {/* Wishlist Button */}
                 <IconButton
                     size="small"
                     sx={{
                         position: 'absolute',
                         top: 12,
+                        right: 12,
+                        bgcolor: 'rgba(255,255,255,0.9)',
+                        color: '#64748B',
+                        '&:hover': { bgcolor: 'white' },
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                    }}
+                >
+                    <FavoriteBorderIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+
+                {/* Share Button - placed below wishlist */}
+                <IconButton
+                    size="small"
+                    sx={{
+                        position: 'absolute',
+                        top: 46, // shifted down so it’s below wishlist
                         right: 12,
                         bgcolor: 'rgba(255,255,255,0.9)',
                         color: '#64748B',
