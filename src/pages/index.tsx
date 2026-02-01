@@ -7,10 +7,6 @@ import {
   Container,
   Box,
   Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Pagination,
   CircularProgress,
   Alert,
@@ -18,8 +14,6 @@ import {
   useTheme,
   IconButton,
   Drawer,
-  AppBar,
-  Toolbar,
   TextField,
   InputAdornment,
   Button,
@@ -28,30 +22,24 @@ import {
   Breadcrumbs,
   Link,
   Stack,
-  Divider,
   Paper,
   Popover,
   Checkbox,
   FormControlLabel,
-  FormGroup,
   Chip,
   Badge,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   Tooltip,
   Snackbar,
 } from '@mui/material';
 
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
-import BookmarkIcon from '@mui/icons-material/Bookmark';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import HistoryIcon from '@mui/icons-material/History';
-import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import BedIcon from '@mui/icons-material/Bed';
-import BathtubIcon from '@mui/icons-material/Bathtub';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import MapIcon from '@mui/icons-material/Map';
