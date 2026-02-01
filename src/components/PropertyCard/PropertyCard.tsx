@@ -73,6 +73,24 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, viewMode = 'grid'
                         height: isList ? { xs: '200px', sm: '100%' } : '220px'
                     }}
                 />
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: 12,
+                        left: 12,
+                        background: 'linear-gradient(135deg, rgb(52, 98, 244), rgb(36, 79, 182))',
+                        color: 'white',
+                        px: '16px',
+                        py: '8px',
+                        borderRadius: '20px',
+                        fontSize: '0.9rem',
+                        fontWeight: 700,
+                        boxShadow: 'rgba(52, 98, 244, 0.3) 0px 2px 8px',
+                        zIndex: 2,
+                    }}
+                >
+                    {formatPrice(property.price)}
+                </Box>
 
                 {/* Auction Badge */}
                 {property.isAuction && (

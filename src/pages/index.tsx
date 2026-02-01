@@ -58,6 +58,8 @@ import MapIcon from '@mui/icons-material/Map';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import CheckIcon from '@mui/icons-material/Check';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+
 import BusinessIcon from '@mui/icons-material/Business';
 import {
   Sort as SortIcon,
@@ -430,7 +432,7 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
   return (
     <Box sx={{ bgcolor: '#F8FAFC', minHeight: '100vh' }}>
       <Head>
-        <title>Property Genie - Find Your Dream Property</title>
+        <title>Property Genie - Assesment</title>
         <meta name="description" content="Browse thousands of properties for sale and rent in Malaysia" />
       </Head>
 
@@ -747,6 +749,8 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
                   <Button
                     variant="outlined"
                     startIcon={<SortIcon />}
+                    endIcon={<KeyboardArrowDownIcon />}
+
                     onClick={handleSortClick}
                     sx={{
                       borderRadius: 1,
@@ -770,7 +774,7 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
                   onClose={handleSortClose}
                   anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                   transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                  PaperProps={{ sx: { p: 0, width: 260, borderRadius: 3, mt: 1, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' } }}
+                  PaperProps={{ sx: { p: 0, width: 260, borderRadius: 1, mt: 1, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' } }}
                 >
                   <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9' }}>
                     <Typography sx={{ fontWeight: 700 }}>Sort By</Typography>
@@ -824,6 +828,7 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
                   onChange={(e, val) => val && setViewMode(val)}
                   size="small"
                   sx={{
+                    display: { xs: 'none', sm: 'flex' },
                     bgcolor: 'white',
                     border: '1px solid #E2E8F0',
                     borderRadius: 1,

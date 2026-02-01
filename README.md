@@ -1,9 +1,7 @@
-Here’s your updated README section with the line added in a natural way:
 
-````markdown
-# Property Genie - Property Listing Application  
+# Property Genie - Assessment 
 
-A modern, high-performance property listing application built with Next.js and Material UI. This application provides a premium user experience for browsing, filtering, and searching real estate listings in Malaysia.  
+This Application Build with Nextjs and Material UI.
 
 ## 🚀 Features  
 
@@ -12,7 +10,7 @@ A modern, high-performance property listing application built with Next.js and M
 - **Premium UI/UX**: Built with a custom Material UI theme, featuring a clean "rectangular-rounded" aesthetic and responsive layouts.  
 - **SSR (Server-Side Rendering)**: Optimized for SEO and performance using Next.js Server-Side Rendering for all listing pages.  
 - **Smart Feedback**: Visual badges and filter counts to clearly indicate applied search criteria.  
-- **Interactive Map Section**: Integration-ready map explore cards with location-based discovery.  
+
 
 ## 🛠️ Technology Stack  
 
@@ -71,12 +69,7 @@ npm start
 
 > **Note:** Best practice is to save API URLs in an `.env` file and import them from there, but as this is a assessment using a public API, the URL is hardcoded in the code.
 
-## 📂 Project Structure
 
-* `src/pages/index.tsx`: Main property listing page and SSR logic.
-* `src/components/Filters/Filters.tsx`: Advanced filtering drawer and logic.
-* `src/components/PropertyCard/PropertyCard.tsx`: Reusable property showcase component.
-* `src/lib/api/properties.ts`: API interaction layer for fetching property data.
 
 ## 📝 License
 
