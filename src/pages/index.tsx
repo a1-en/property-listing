@@ -159,6 +159,15 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
           baths={state.baths}
           setBaths={actions.setBaths}
           handleBedsBathsApply={actions.handleBedsBathsApply}
+          priceAnchor={state.priceAnchor}
+          minPrice={state.minPrice}
+          maxPrice={state.maxPrice}
+          setMinPrice={actions.setMinPrice}
+          setMaxPrice={actions.setMaxPrice}
+          handlePriceClick={actions.handlePriceClick}
+          handlePriceClose={actions.handlePriceClose}
+          handlePriceApply={actions.handlePriceApply}
+          handlePriceClear={actions.handlePriceClear}
         />
 
         <Grid container spacing={4}>
@@ -353,22 +362,46 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     if (searchTerm && properties.length > 0) {
       const words = searchTerm.split(/\s+/).filter(Boolean);
-      const matchesTerm = (text: string) => {
-        const t = (text || '').toLowerCase();
-        return words.every((w) => t.includes(w));
-      };
-      const filtered = properties.filter((p: any) => {
+
+      const matchesTerm = (p: any) => {
         const city = p.city ?? p.location?.city ?? '';
         const state = p.state ?? p.location?.state ?? '';
         const address = p.address ?? '';
         const name = p.name ?? '';
         const country = p.country ?? '';
         const postcode = (p.postcode ?? '').toString();
-        return (
-          matchesTerm(name) || matchesTerm(address) || matchesTerm(city) ||
-          matchesTerm(state) || matchesTerm(country) || matchesTerm(postcode)
-        );
-      });
+        const price = (p.price ?? 0).toString();
+
+        return words.every((word) => {
+          const w = word.toLowerCase();
+          // Text matching
+          if (
+            name.toLowerCase().includes(w) ||
+            address.toLowerCase().includes(w) ||
+            city.toLowerCase().includes(w) ||
+            state.toLowerCase().includes(w) ||
+            country.toLowerCase().includes(w) ||
+            postcode.includes(w)
+          ) {
+            return true;
+          }
+
+          // Price matching (if the word is numeric)
+          const numValue = parseFloat(w.replace(/,/g, '').replace(/[^\d.-]/g, ''));
+          if (!isNaN(numValue)) {
+            // Check if property price is exactly the same, or contains the digits
+            if (price.includes(w)) return true;
+            // Also allow a range match if it's a large number (e.g., within 5% of the price)
+            if (numValue > 1000) {
+              const diff = Math.abs(p.price - numValue);
+              if (diff / numValue <= 0.05) return true;
+            }
+          }
+
+          return false;
+        });
+      };
+      const filtered = properties.filter(p => matchesTerm(p));
       properties = filtered;
       total = filtered.length;
       totalPages = Math.max(1, Math.ceil(filtered.length / 10));

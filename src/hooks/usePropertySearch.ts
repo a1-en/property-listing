@@ -12,6 +12,9 @@ export function usePropertySearch() {
     const [beds, setBeds] = useState<string[]>([]);
     const [baths, setBaths] = useState<string[]>([]);
     const [sortAnchor, setSortAnchor] = useState<null | HTMLElement>(null);
+    const [priceAnchor, setPriceAnchor] = useState<null | HTMLElement>(null);
+    const [minPrice, setMinPrice] = useState<string>(router.query.minPrice?.toString() || '');
+    const [maxPrice, setMaxPrice] = useState<string>(router.query.maxPrice?.toString() || '');
     const [locationSearch, setLocationSearch] = useState(
         () => router.query.location?.toString() || router.query.name?.toString() || ''
     );
@@ -39,7 +42,9 @@ export function usePropertySearch() {
         if (router.query.section) {
             setListingType(router.query.section as string);
         }
-    }, [router.isReady, router.query.location, router.query.name, router.query.section]);
+        setMinPrice(router.query.minPrice?.toString() || '');
+        setMaxPrice(router.query.maxPrice?.toString() || '');
+    }, [router.isReady, router.query.location, router.query.name, router.query.section, router.query.minPrice, router.query.maxPrice]);
 
     const { page = '1', sort = 'default' } = router.query;
     const currentPage = parseInt(page as string, 10);
@@ -87,6 +92,33 @@ export function usePropertySearch() {
     const handleBedsBathsClose = () => setBedsBathsAnchor(null);
     const handleSortClick = (event: React.MouseEvent<HTMLButtonElement>) => setSortAnchor(event.currentTarget);
     const handleSortClose = () => setSortAnchor(null);
+    const handlePriceClick = (event: React.MouseEvent<HTMLButtonElement>) => setPriceAnchor(event.currentTarget);
+    const handlePriceClose = () => setPriceAnchor(null);
+
+    const handlePriceApply = () => {
+        const query: any = { ...router.query, page: 1 };
+        const clean = (val: string) => val.replace(/,/g, '').replace(/[^\d.-]/g, '');
+        const min = minPrice ? parseFloat(clean(minPrice)) : null;
+        const max = maxPrice ? parseFloat(clean(maxPrice)) : null;
+
+        if (min) query.minPrice = min.toString();
+        else delete query.minPrice;
+        if (max) query.maxPrice = max.toString();
+        else delete query.maxPrice;
+
+        router.push({ pathname: '/', query });
+        handlePriceClose();
+    };
+
+    const handlePriceClear = () => {
+        setMinPrice('');
+        setMaxPrice('');
+        const query = { ...router.query };
+        delete query.minPrice;
+        delete query.maxPrice;
+        router.push({ pathname: '/', query });
+        handlePriceClose();
+    };
 
     const handleBedsBathsApply = () => {
         handleBedsBathsClose();
@@ -228,7 +260,10 @@ export function usePropertySearch() {
             currentPage,
             currentSort,
             getFilterCount,
-            getBedsBathsCount
+            getBedsBathsCount,
+            priceAnchor,
+            minPrice,
+            maxPrice
         },
         actions: {
             setMobileFiltersOpen,
@@ -240,10 +275,16 @@ export function usePropertySearch() {
             setSnackbarOpen,
             setBeds,
             setBaths,
+            setMinPrice,
+            setMaxPrice,
             handleBedsBathsClick,
             handleBedsBathsClose,
             handleSortClick,
             handleSortClose,
+            handlePriceClick,
+            handlePriceClose,
+            handlePriceApply,
+            handlePriceClear,
             handleBedsBathsApply,
             handleBedsBathsClear,
             handleSearch,

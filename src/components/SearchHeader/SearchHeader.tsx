@@ -49,6 +49,16 @@ interface SearchHeaderProps {
     baths: string[];
     setBaths: (val: any) => void;
     handleBedsBathsApply: () => void;
+    // Price Popover props
+    priceAnchor: HTMLElement | null;
+    minPrice: string;
+    maxPrice: string;
+    setMinPrice: (val: string) => void;
+    setMaxPrice: (val: string) => void;
+    handlePriceClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+    handlePriceClose: () => void;
+    handlePriceApply: () => void;
+    handlePriceClear: () => void;
 }
 
 const SearchHeader: React.FC<SearchHeaderProps> = ({
@@ -75,23 +85,31 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
     setBeds,
     baths,
     setBaths,
-    handleBedsBathsApply
+    handleBedsBathsApply,
+    priceAnchor,
+    minPrice,
+    maxPrice,
+    setMinPrice,
+    setMaxPrice,
+    handlePriceClick,
+    handlePriceClose,
+    handlePriceApply,
+    handlePriceClear
 }) => {
     React.useEffect(() => {
         const handleScroll = () => {
-            if (openBedsBaths) {
-                handleBedsBathsClose();
-            }
+            if (openBedsBaths) handleBedsBathsClose();
+            if (priceAnchor) handlePriceClose();
         };
 
-        if (openBedsBaths) {
+        if (openBedsBaths || priceAnchor) {
             document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
         }
 
         return () => {
             document.removeEventListener('scroll', handleScroll, { capture: true });
         };
-    }, [openBedsBaths, handleBedsBathsClose]);
+    }, [openBedsBaths, handleBedsBathsClose, priceAnchor, handlePriceClose]);
 
     return (
         <Paper
@@ -216,6 +234,31 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
                         </Badge>
                     </Tooltip>
 
+                    {(router.query.minPrice || router.query.maxPrice) && (
+                        <Tooltip title="Quick Price Range selection" arrow>
+                            <Button
+                                variant="outlined"
+                                onClick={handlePriceClick}
+                                sx={{
+                                    borderRadius: 1,
+                                    height: 48,
+                                    px: 2.5,
+                                    borderColor: 'primary.main',
+                                    color: 'primary.main',
+                                    bgcolor: 'rgba(34, 197, 94, 0.04)',
+                                    fontWeight: 600,
+                                    textTransform: 'none',
+                                    whiteSpace: 'nowrap',
+                                    '&:hover': { borderColor: 'primary.main', bgcolor: '#F8FAFC' }
+                                }}
+                            >
+                                {router.query.minPrice && router.query.maxPrice ? `RM ${router.query.minPrice} - ${router.query.maxPrice}` :
+                                    router.query.minPrice ? `Min RM ${router.query.minPrice}` :
+                                        `Under RM ${router.query.maxPrice}`}
+                            </Button>
+                        </Tooltip>
+                    )}
+
                     <Tooltip title="Quick Bedroom & Bathroom selection" arrow>
                         <Badge
                             badgeContent={bedsBathsCount}
@@ -326,6 +369,46 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
                         </Tooltip>
                     </Stack>
                 </Stack>
+
+                <Popover
+                    open={Boolean(priceAnchor)}
+                    anchorEl={priceAnchor}
+                    onClose={handlePriceClose}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                    PaperProps={{ sx: { p: 3, width: 320, borderRadius: 1.5, mt: 1, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' } }}
+                >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography sx={{ fontWeight: 700 }}>Price Range (RM)</Typography>
+                        <Button size="small" onClick={handlePriceClear} sx={{ fontWeight: 600 }}>Clear</Button>
+                    </Box>
+                    <Stack spacing={2}>
+                        <TextField
+                            label="Min Price"
+                            fullWidth
+                            size="small"
+                            value={minPrice}
+                            onChange={(e) => setMinPrice(e.target.value)}
+                            placeholder="e.g. 100,000"
+                        />
+                        <TextField
+                            label="Max Price"
+                            fullWidth
+                            size="small"
+                            value={maxPrice}
+                            onChange={(e) => setMaxPrice(e.target.value)}
+                            placeholder="e.g. 500,000"
+                        />
+                        <Button
+                            fullWidth
+                            variant="contained"
+                            onClick={handlePriceApply}
+                            sx={{ mt: 1, py: 1.5, borderRadius: 1, fontWeight: 700 }}
+                        >
+                            Apply
+                        </Button>
+                    </Stack>
+                </Popover>
 
                 <Popover
                     open={openBedsBaths}

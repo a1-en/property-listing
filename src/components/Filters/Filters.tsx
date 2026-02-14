@@ -62,12 +62,18 @@ const Filters: React.FC<FiltersProps> = ({ propertyTypes = [], onFilterChange, i
     const [furnishing, setFurnishing] = useState<string[]>(initialFilters.furnishings || []);
     const [isAuction, setIsAuction] = useState<boolean>(initialFilters.isAuction || false);
 
+    const parsePrice = (val: string) => {
+        if (!val) return undefined;
+        const cleaned = val.replace(/,/g, '').replace(/[^\d.-]/g, '');
+        return cleaned ? parseFloat(cleaned) : undefined;
+    };
+
     const handleApplyFilters = () => {
         const filters: PropertyFilters = {
             ...(category !== 'all' && { categories: [category] }),
             ...(selectedTypes.length > 0 && { types: selectedTypes }),
-            ...(minPrice && { minPrice: parseFloat(minPrice) }),
-            ...(maxPrice && { maxPrice: parseFloat(maxPrice) }),
+            ...(minPrice && { minPrice: parsePrice(minPrice) }),
+            ...(maxPrice && { maxPrice: parsePrice(maxPrice) }),
             ...(bedrooms.length > 0 && {
                 bedRooms: bedrooms.map(b => b === 'Studio' ? 0 : parseInt(b, 10))
             }),
