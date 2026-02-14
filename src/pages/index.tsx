@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -8,54 +8,39 @@ import {
   Box,
   Typography,
   Pagination,
-  CircularProgress,
   Alert,
   useMediaQuery,
   useTheme,
   IconButton,
-  Drawer,
-  TextField,
-  InputAdornment,
-  Button,
-  ToggleButtonGroup,
-  ToggleButton,
   Breadcrumbs,
   Link,
   Stack,
-  Paper,
-  Popover,
-  Checkbox,
-  FormControlLabel,
-  Chip,
-  Badge,
+  Button,
+  ToggleButtonGroup,
+  ToggleButton,
+  Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
-  Tooltip,
   Snackbar,
 } from '@mui/material';
 
-import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import HistoryIcon from '@mui/icons-material/History';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import BedIcon from '@mui/icons-material/Bed';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ViewListIcon from '@mui/icons-material/ViewList';
-import MapIcon from '@mui/icons-material/Map';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import CheckIcon from '@mui/icons-material/Check';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-
-import BusinessIcon from '@mui/icons-material/Business';
-import {
-  Sort as SortIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
+import CloseIcon from '@mui/icons-material/Close';
+import { Sort as SortIcon } from '@mui/icons-material';
 
 import PropertyCard from '@/components/PropertyCard';
 import Filters from '@/components/Filters';
+import SearchHeader from '@/components/SearchHeader/SearchHeader';
+import Sidebar from '@/components/Sidebar/Sidebar';
+import SavedSearches from '@/components/SavedSearches/SavedSearches';
+import SortPopover from '@/components/SortPopover/SortPopover';
+
+import { usePropertySearch } from '@/hooks/usePropertySearch';
 import {
   fetchProperties,
   PropertiesResponse,
@@ -75,118 +60,21 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [savedSearchesOpen, setSavedSearchesOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [listingType, setListingType] = useState('sale');
-  const [bedsBathsAnchor, setBedsBathsAnchor] = useState<null | HTMLElement>(null);
-  const [beds, setBeds] = useState<string[]>([]);
-  const [baths, setBaths] = useState<string[]>([]);
-  const [sortAnchor, setSortAnchor] = useState<null | HTMLElement>(null);
-  const [locationSearch, setLocationSearch] = useState(
-    () => router.query.location?.toString() || router.query.name?.toString() || ''
-  );
-  const [nameSearch, setNameSearch] = useState(router.query.name?.toString() || '');
-  const [savedSearches, setSavedSearches] = useState<any[]>([]);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  // Load saved searches on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('saved_searches');
-    if (saved) {
-      setSavedSearches(JSON.parse(saved));
-    }
-  }, []);
-
-  // Sync search box with URL when query changes (e.g. saved search, back button)
-  useEffect(() => {
-    if (!router.isReady) return;
-    const loc = router.query.location?.toString() || '';
-    const name = router.query.name?.toString() || '';
-    const term = loc || name;
-    setLocationSearch(term);
-    setNameSearch(name);
-  }, [router.isReady, router.query.location, router.query.name]);
-
-  const openBedsBaths = Boolean(bedsBathsAnchor);
-  const openSort = Boolean(sortAnchor);
-
-  const { page = '1', sort = 'default' } = router.query;
-  const currentPage = parseInt(page as string, 10);
-  const currentSort = sort as string;
-
-  // Active Filter counts for Badges
-  const getFilterCount = () => {
-    let count = 0;
-    const { minPrice, maxPrice, categories, types: typesQuery, tenure, furnishings, isAuction, bedRooms, bathRooms } = router.query;
-    if (minPrice) count++;
-    if (maxPrice) count++;
-    // Category + property types count as one "property" filter (e.g. Residential with its types = 1)
-    if (categories || typesQuery) count += 1;
-    if (tenure) count += (tenure as string).split(',').length;
-    if (furnishings) count += (furnishings as string).split(',').length;
-    if (isAuction === 'true') count++;
-    if (bedRooms) count += (bedRooms as string).split(',').length;
-    if (bathRooms) count += (bathRooms as string).split(',').length;
-    return count;
-  };
-
-  const getBedsBathsCount = () => {
-    let count = 0;
-    if (router.query.bedRooms) {
-      count += (router.query.bedRooms as string).split(',').length;
-    }
-    if (router.query.bathRooms) {
-      count += (router.query.bathRooms as string).split(',').length;
-    }
-    return count;
-  };
-
-  const handleBedsBathsClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    // Initialize local state from current URL query
-    if (router.query.bedRooms) {
-      setBeds((router.query.bedRooms as string).split(','));
-    } else {
-      setBeds([]);
-    }
-    if (router.query.bathRooms) {
-      setBaths((router.query.bathRooms as string).split(','));
-    } else {
-      setBaths([]);
-    }
-    setBedsBathsAnchor(event.currentTarget);
-  };
+  const { state, actions } = usePropertySearch();
 
   const getBedsBathsLabel = () => {
     const bedsArr = router.query.bedRooms ? (router.query.bedRooms as string).split(',') : [];
     const bathsArr = router.query.bathRooms ? (router.query.bathRooms as string).split(',') : [];
-
     let label = "";
-
-    if (bedsArr.length === 1) {
-      label += `${bedsArr[0]} bed`;
-    } else if (bedsArr.length > 1) {
-      label += `${bedsArr.length} beds`;
-    }
-
+    if (bedsArr.length === 1) label += `${bedsArr[0]} bed`;
+    else if (bedsArr.length > 1) label += `${bedsArr.length} beds`;
     if (bathsArr.length > 0) {
       if (label) label += " & ";
-      if (bathsArr.length === 1) {
-        label += `${bathsArr[0]} bath`;
-      } else {
-        label += `${bathsArr.length} baths`;
-      }
+      if (bathsArr.length === 1) label += `${bathsArr[0]} bath`;
+      else label += `${bathsArr.length} baths`;
     }
-
     return label || "Beds & Baths";
-  };
-
-  const handleSortClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setSortAnchor(event.currentTarget);
-  };
-
-  const handleSortClose = () => {
-    setSortAnchor(null);
   };
 
   const getSortLabel = (sortValue: string) => {
@@ -204,204 +92,17 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
     return labels[sortValue] || 'Sort By';
   };
 
-  const handleBedsBathsClose = () => {
-    setBedsBathsAnchor(null);
-  };
-
-  const handleBedsBathsApply = () => {
-    handleBedsBathsClose();
-
-    const query: any = { ...router.query, page: 1 };
-    if (beds.length > 0) query.bedRooms = beds.join(',');
-    if (baths.length > 0) query.bathRooms = baths.join(',');
-
-    router.push({
-      pathname: '/',
-      query
-    });
-  };
-
-  const handleBedsBathsClear = () => {
-    setBeds([]);
-    setBaths([]);
-    handleBedsBathsClose();
-
-    const query = { ...router.query };
-    delete query.bedRooms;
-    delete query.bathRooms;
-
-    router.push({
-      pathname: '/',
-      query
-    });
-  };
-
-  // Handle search action — main search bar searches both location and property name
-  const handleSearch = () => {
-    const query: any = { ...router.query, page: 1 };
-    const searchTerm = (locationSearch || nameSearch || '').trim();
-    if (searchTerm) {
-      query.location = searchTerm;
-      query.name = searchTerm;
-    } else {
-      delete query.location;
-      delete query.name;
-    }
-
-    router.push({
-      pathname: '/',
-      query
-    });
-  };
-
-  const handleSaveSearch = () => {
-    // Generate a descriptive name if name/location are empty
-    let generatedName = nameSearch || locationSearch;
-
-    if (!generatedName) {
-      const filters = getCurrentFilters();
-      const bedsBaths = getBedsBathsLabel();
-
-      const parts = [];
-      if (filters.categories) parts.push(filters.categories[0]);
-      if (bedsBaths !== "Beds & Baths") parts.push(bedsBaths);
-      if (filters.minPrice || filters.maxPrice) parts.push("Price Filter");
-
-      generatedName = parts.length > 0 ? parts.join(' - ') : 'General Search';
-    }
-
-    // Don't save if there are literally no filters and no search terms
-    if (generatedName === 'General Search' && getFilterCount() === 0 && getBedsBathsCount() === 0) {
-      return;
-    }
-
-    const newSave = {
-      id: Date.now(),
-      name: generatedName,
-      query: { ...router.query, location: locationSearch, name: nameSearch },
-      timestamp: new Date().toISOString(),
-      filters: getFilterCount() + getBedsBathsCount()
-    };
-    const updated = [newSave, ...savedSearches];
-    setSavedSearches(updated);
-    localStorage.setItem('saved_searches', JSON.stringify(updated));
-    setSnackbarOpen(true);
-  };
-
-  const handleDeleteSavedSearch = (id: number) => {
-    const updated = savedSearches.filter(s => s.id !== id);
-    setSavedSearches(updated);
-    localStorage.setItem('saved_searches', JSON.stringify(updated));
-  };
-
-  const applySavedSearch = (search: any) => {
-    setLocationSearch(search.query.location || '');
-    setNameSearch(search.query.name || '');
-    router.push({
-      pathname: '/',
-      query: search.query
-    });
-    setSavedSearchesOpen(false);
-  };
-
-  // Handle sorting change
-  const handleSortChange = (newSort: string) => {
-    router.push({
-      pathname: '/',
-      query: { ...router.query, sort: newSort, page: 1 },
-    });
-  };
-
-  // Handle pagination change
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    router.push({
-      pathname: '/',
-      query: { ...router.query, page: value },
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Handle Section change
-  const handleSectionChange = (val: string) => {
-    setListingType(val);
-    router.push({
-      pathname: '/',
-      query: { ...router.query, section: val, page: 1 }
-    });
-  };
-
-  // Handle filter changes
-  const handleFilterChange = (filters: PropertyFilters) => {
-    const query: any = { page: 1, sort: currentSort };
-
-    if (locationSearch) query.location = locationSearch;
-    if (nameSearch) query.name = nameSearch;
-
-    if (filters.minPrice) query.minPrice = filters.minPrice.toString();
-    if (filters.maxPrice) query.maxPrice = filters.maxPrice.toString();
-    if (filters.categories && filters.categories.length > 0) {
-      query.categories = filters.categories.join(',');
-    }
-    if (filters.types && filters.types.length > 0) {
-      query.types = filters.types.join(',');
-    }
-    if (filters.bedRooms && filters.bedRooms.length > 0) {
-      query.bedRooms = filters.bedRooms.join(',');
-    }
-    if (filters.bathRooms && filters.bathRooms.length > 0) {
-      query.bathRooms = filters.bathRooms.join(',');
-    }
-    if (filters.tenure && filters.tenure.length > 0) {
-      query.tenure = filters.tenure.join(',');
-    }
-    if (filters.furnishings && filters.furnishings.length > 0) {
-      query.furnishings = filters.furnishings.join(',');
-    }
-    if (filters.isAuction) {
-      query.isAuction = 'true';
-    }
-    if (listingType) query.section = listingType;
-
-    router.push({
-      pathname: '/',
-      query,
-    });
-
-    setMobileFiltersOpen(false);
-  };
-
-  // Get current filters from URL
   const getCurrentFilters = (): PropertyFilters => {
     const filters: PropertyFilters = {};
-
-    if (router.query.minPrice) {
-      filters.minPrice = parseFloat(router.query.minPrice as string);
-    }
-    if (router.query.maxPrice) {
-      filters.maxPrice = parseFloat(router.query.maxPrice as string);
-    }
-    if (router.query.categories) {
-      filters.categories = (router.query.categories as string).split(',');
-    }
-    if (router.query.types) {
-      filters.types = (router.query.types as string).split(',').filter(Boolean);
-    }
-    if (router.query.bedRooms) {
-      filters.bedRooms = (router.query.bedRooms as string).split(',').map(n => parseInt(n, 10));
-    }
-    if (router.query.bathRooms) {
-      filters.bathRooms = (router.query.bathRooms as string).split(',').map(n => parseInt(n, 10));
-    }
-    if (router.query.tenure) {
-      filters.tenure = (router.query.tenure as string).split(',');
-    }
-    if (router.query.furnishings) {
-      filters.furnishings = (router.query.furnishings as string).split(',');
-    }
-    if (router.query.isAuction === 'true') {
-      filters.isAuction = true;
-    }
-
+    if (router.query.minPrice) filters.minPrice = parseFloat(router.query.minPrice as string);
+    if (router.query.maxPrice) filters.maxPrice = parseFloat(router.query.maxPrice as string);
+    if (router.query.categories) filters.categories = (router.query.categories as string).split(',');
+    if (router.query.types) filters.types = (router.query.types as string).split(',').filter(Boolean);
+    if (router.query.bedRooms) filters.bedRooms = (router.query.bedRooms as string).split(',').map(n => parseInt(n, 10));
+    if (router.query.bathRooms) filters.bathRooms = (router.query.bathRooms as string).split(',').map(n => parseInt(n, 10));
+    if (router.query.tenure) filters.tenure = (router.query.tenure as string).split(',');
+    if (router.query.furnishings) filters.furnishings = (router.query.furnishings as string).split(',');
+    if (router.query.isAuction === 'true') filters.isAuction = true;
     return filters;
   };
 
@@ -428,449 +129,102 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
         {/* Breadcrumbs */}
         <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ mb: 3, flexWrap: 'wrap' }}>
           <Link underline="hover" color="inherit" href="/" sx={{ fontSize: '0.9rem' }}>Home</Link>
-          <Typography color="text.primary" sx={{ fontSize: '0.9rem', fontWeight: 500 }}>Properties for {listingType === 'rent' ? 'Rent' : 'Sale'}</Typography>
+          <Typography color="text.primary" sx={{ fontSize: '0.9rem', fontWeight: 500 }}>
+            Properties for {state.listingType === 'rent' ? 'Rent' : 'Sale'}
+          </Typography>
         </Breadcrumbs>
 
-        {/* Search Header Section */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 1.5,
-            mb: 4,
-            borderRadius: 1,
-            border: '1px solid #E2E8F0',
-            display: 'flex',
-            flexDirection: { xs: 'column', lg: 'row' },
-            gap: 1.5,
-            alignItems: 'stretch',
-            bgcolor: 'white',
-            overflow: 'hidden',
-            minWidth: 0
-          }}
-        >
-          {/* Location Search Case - stack on mobile to prevent horizontal overflow */}
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', md: 'row' },
-              flex: 1,
-              width: '100%',
-              minWidth: 0,
-              gap: 1.5,
-              alignItems: { xs: 'stretch', md: 'center' }
-            }}
-          >
-            <TextField
-              fullWidth
-              placeholder="Search by property name, location, area or landmark"
-              value={locationSearch}
-              onChange={(e) => setLocationSearch(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              sx={{
-                flex: 1,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1,
-                  bgcolor: 'white',
-                  height: 48,
-                  '& fieldset': { borderColor: '#E2E8F0' },
-                  '&:hover fieldset': { borderColor: 'primary.main' },
-                }
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LocationOnIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-                endAdornment: locationSearch && (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setLocationSearch('');
-                        setNameSearch('');
-                        const query = { ...router.query };
-                        delete query.location;
-                        delete query.name;
-                        router.push({ pathname: '/', query });
-                      }}
-                    >
-                      <CloseIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
-            <Button
-              variant="contained"
-              onClick={handleSearch}
-              sx={{
-                height: 48,
-                px: 3,
-                borderRadius: 1,
-                textTransform: 'none',
-                fontWeight: 700,
-                boxShadow: 'none',
-                whiteSpace: 'nowrap',
-                flexShrink: { xs: 0, md: 0 }
-              }}
-            >
-              Search
-            </Button>
-            <Stack direction="row" spacing={1.5} alignItems="center" useFlexGap sx={{ flexWrap: 'wrap', minWidth: 0 }}>
-              <Tooltip title="View all filter options" arrow>
-                <Badge
-                  badgeContent={getFilterCount()}
-                  color="primary"
-                  sx={{
-                    '& .MuiBadge-badge': {
-                      right: 1,
-                      top: 1,
-                      border: '2px solid white',
-                      height: 20,
-                      minWidth: 20,
-                      borderRadius: '50%',
-                      fontWeight: 700
-                    }
-                  }}
-                >
-                  <Button
-                    variant="outlined"
-                    startIcon={<FilterListIcon />}
-                    onClick={() => setMobileFiltersOpen(true)}
-                    sx={{
-                      borderRadius: 1,
-                      height: 48,
-                      px: 2.5,
-                      borderColor: '#E2E8F0',
-                      color: 'text.primary',
-                      fontWeight: 600,
-                      textTransform: 'none',
-                      whiteSpace: 'nowrap',
-                      '&:hover': { borderColor: 'primary.main', bgcolor: '#F8FAFC' }
-                    }}
-                  >
-                    Filters
-                  </Button>
-                </Badge>
-              </Tooltip>
-
-              <Tooltip title="Quick Bedroom & Bathroom selection" arrow>
-                <Badge
-                  badgeContent={getBedsBathsCount()}
-                  color="primary"
-                  sx={{
-                    '& .MuiBadge-badge': {
-                      right: 1,
-                      top: 1,
-                      border: '2px solid white',
-                      height: 20,
-                      minWidth: 20,
-                      borderRadius: '50%',
-                      fontWeight: 700
-                    }
-                  }}
-                >
-                  <Button
-                    variant="outlined"
-                    startIcon={<BedIcon />}
-                    onClick={handleBedsBathsClick}
-                    sx={{
-                      borderRadius: 1,
-                      height: 48,
-                      px: 2.5,
-                      borderColor: '#E2E8F0',
-                      color: 'text.primary',
-                      fontWeight: 600,
-                      textTransform: 'none',
-                      whiteSpace: 'nowrap',
-                      '&:hover': { borderColor: 'primary.main', bgcolor: '#F8FAFC' }
-                    }}
-                  >
-                    {getBedsBathsLabel()}
-                  </Button>
-                </Badge>
-              </Tooltip>
-
-              <ToggleButtonGroup
-                value={listingType}
-                exclusive
-                onChange={(e, val) => val && handleSectionChange(val)}
-                sx={{
-                  height: 48,
-                  '& .MuiToggleButton-root': {
-                    px: 3,
-                    border: '1px solid #E2E8F0',
-                    borderRadius: 1,
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    whiteSpace: 'nowrap',
-                    color: 'primary.main',
-                    '&.Mui-selected': {
-                      bgcolor: 'primary.main',
-                      color: 'white',
-                      '&:hover': { bgcolor: 'primary.dark' }
-                    }
-                  }
-                }}
-              >
-                <ToggleButton value="sale" sx={{ mr: '-1px' }}>For Sale</ToggleButton>
-                <ToggleButton value="rent">For Rent</ToggleButton>
-              </ToggleButtonGroup>
-
-              <Stack direction="row" spacing={1}>
-                <Tooltip title="Save this search" arrow>
-                  <IconButton
-                    onClick={handleSaveSearch}
-                    sx={{
-                      border: '1px solid #E2E8F0',
-                      borderRadius: 1,
-                      height: 48,
-                      width: 48,
-                      color: 'primary.main'
-                    }}
-                  >
-                    <BookmarkBorderIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="View Saved & Recent searches" arrow>
-                  <Badge
-                    badgeContent={savedSearches.length}
-                    color="primary"
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: 4,
-                        top: 4,
-                        border: '2px solid white',
-                        height: 20,
-                        minWidth: 20,
-                        borderRadius: '50%',
-                        fontWeight: 700
-                      }
-                    }}
-                  >
-                    <IconButton
-                      onClick={() => setSavedSearchesOpen(true)}
-                      sx={{
-                        border: '1px solid #E2E8F0',
-                        borderRadius: 1,
-                        height: 48,
-                        width: 48,
-                        color: 'text.secondary'
-                      }}
-                    >
-                      <HistoryIcon />
-                    </IconButton>
-                  </Badge>
-                </Tooltip>
-              </Stack>
-            </Stack>
-
-            <Popover
-              open={openBedsBaths}
-              anchorEl={bedsBathsAnchor}
-              onClose={handleBedsBathsClose}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-              PaperProps={{ sx: { p: 3, width: 320, borderRadius: 1.5, mt: 1, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' } }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography sx={{ fontWeight: 700 }}>Beds & Baths</Typography>
-                <Button size="small" onClick={handleBedsBathsClear} sx={{ fontWeight: 600 }}>Clear</Button>
-              </Box>
-
-              <Typography variant="body2" sx={{ fontWeight: 700, mb: 1, mt: 2 }}>Bedrooms</Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
-                {['Studio', '1', '2', '3', '4', '5+'].map((num) => (
-                  <FormControlLabel
-                    key={num}
-                    control={<Checkbox size="small" checked={beds.includes(num)} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBeds(prev => e.target.checked ? [...prev, num] : prev.filter(b => b !== num))} />}
-                    label={<Typography variant="body2" sx={{ fontWeight: 500 }}>{num}</Typography>}
-                  />
-                ))}
-              </Box>
-
-              <Typography variant="body2" sx={{ fontWeight: 700, mb: 1, mt: 2 }}>Bathrooms</Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
-                {['1', '2', '3', '4', '5+'].map((num) => (
-                  <FormControlLabel
-                    key={num}
-                    control={<Checkbox size="small" checked={baths.includes(num)} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBaths(prev => e.target.checked ? [...prev, num] : prev.filter(b => b !== num))} />}
-                    label={<Typography variant="body2" sx={{ fontWeight: 500 }}>{num}</Typography>}
-                  />
-                ))}
-              </Box>
-
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={handleBedsBathsApply}
-                sx={{ mt: 3, py: 1.5, borderRadius: 1, fontWeight: 700 }}
-              >
-                Apply
-              </Button>
-            </Popover>
-          </Box>
-        </Paper>
+        <SearchHeader
+          locationSearch={state.locationSearch}
+          setLocationSearch={actions.setLocationSearch}
+          setNameSearch={actions.setNameSearch}
+          handleSearch={actions.handleSearch}
+          filterCount={state.getFilterCount()}
+          setMobileFiltersOpen={actions.setMobileFiltersOpen}
+          bedsBathsCount={state.getBedsBathsCount()}
+          bedsBathsLabel={getBedsBathsLabel()}
+          handleBedsBathsClick={actions.handleBedsBathsClick}
+          listingType={state.listingType}
+          handleSectionChange={actions.handleSectionChange}
+          handleSaveSearch={actions.handleSaveSearch}
+          savedSearchesCount={state.savedSearches.length}
+          setSavedSearchesOpen={actions.setSavedSearchesOpen}
+          router={router}
+          openBedsBaths={Boolean(state.bedsBathsAnchor)}
+          bedsBathsAnchor={state.bedsBathsAnchor}
+          handleBedsBathsClose={actions.handleBedsBathsClose}
+          handleBedsBathsClear={actions.handleBedsBathsClear}
+          beds={state.beds}
+          setBeds={actions.setBeds}
+          baths={state.baths}
+          setBaths={actions.setBaths}
+          handleBedsBathsApply={actions.handleBedsBathsApply}
+        />
 
         <Grid container spacing={4}>
-          {/* Main Content Area */}
           <Grid size={{ xs: 12, lg: 9 }}>
-            {/* Header Controls - stack on mobile to prevent overlap */}
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', sm: 'row' },
-                justifyContent: 'space-between',
-                alignItems: { xs: 'stretch', sm: 'center' },
-                gap: 2,
-                mb: 3,
-                minWidth: 0
-              }}
-            >
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: 2, mb: 3, minWidth: 0 }}>
               <Typography variant="h5" sx={{ fontWeight: 800, minWidth: 0 }}>
-                {initialData?.total?.toLocaleString()} Properties for {listingType === 'rent' ? 'Rent' : 'Sale'} in Malaysia
+                {initialData?.total?.toLocaleString()} Properties for {state.listingType === 'rent' ? 'Rent' : 'Sale'} in Malaysia
               </Typography>
 
               <Stack direction="row" spacing={2} alignItems="center" sx={{ flexShrink: 0 }}>
-                <Tooltip title="Change listing order" arrow>
-                  <Button
-                    variant="outlined"
-                    startIcon={<SortIcon />}
-                    endIcon={<KeyboardArrowDownIcon />}
-
-                    onClick={handleSortClick}
-                    sx={{
-                      borderRadius: 1,
-                      px: 2,
-                      py: 1,
-                      borderColor: '#E2E8F0',
-                      color: 'text.primary',
-                      fontWeight: 500,
-                      textTransform: 'none',
-                      bgcolor: 'white',
-                      '&:hover': { borderColor: 'primary.main', bgcolor: '#F8FAFC' }
-                    }}
-                  >
-                    {getSortLabel(currentSort)}
-                  </Button>
-                </Tooltip>
-
-                <Popover
-                  open={openSort}
-                  anchorEl={sortAnchor}
-                  onClose={handleSortClose}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                  PaperProps={{ sx: { p: 0, width: 260, borderRadius: 1, mt: 1, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' } }}
+                <Button
+                  variant="outlined"
+                  startIcon={<SortIcon />}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  onClick={actions.handleSortClick}
+                  sx={{ borderRadius: 1, px: 2, py: 1, borderColor: '#E2E8F0', color: 'text.primary', fontWeight: 500, textTransform: 'none', bgcolor: 'white', '&:hover': { borderColor: 'primary.main', bgcolor: '#F8FAFC' } }}
                 >
-                  <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9' }}>
-                    <Typography sx={{ fontWeight: 700 }}>Sort By</Typography>
-                    <Button
-                      size="small"
-                      onClick={() => { handleSortChange('default'); handleSortClose(); }}
-                      sx={{ fontWeight: 600, textTransform: 'none' }}
-                    >
-                      Clear
-                    </Button>
-                  </Box>
+                  {getSortLabel(state.currentSort)}
+                </Button>
 
-                  <Stack spacing={0}>
-                    {[
-                      { label: 'Recommended', value: 'default' },
-                      { label: 'Price: Low to High', value: 'priceLowToHigh' },
-                      { label: 'Price: High to Low', value: 'priceHighToLow' },
-                      { label: 'Floor Size: Low to High', value: 'floorSizeLowToHigh' },
-                      { label: 'Floor Size: High to Low', value: 'floorSizeHighToLow' },
-                      { label: 'PSF: Low to High', value: 'psfLowToHigh' },
-                      { label: 'PSF: High to Low', value: 'psfHighToLow' },
-                      { label: 'Newest Listings', value: 'newest' },
-                      { label: 'Oldest Listings', value: 'oldest' },
-                    ].map((option) => (
-                      <Button
-                        key={option.value}
-                        fullWidth
-                        onClick={() => { handleSortChange(option.value); handleSortClose(); }}
-                        sx={{
-                          justifyContent: 'space-between',
-                          px: 2,
-                          py: 1.5,
-                          borderRadius: 0,
-                          color: currentSort === option.value ? 'primary.main' : 'text.primary',
-                          fontWeight: currentSort === option.value ? 700 : 500,
-                          textTransform: 'none',
-                          bgcolor: 'transparent',
-                          '&:hover': { bgcolor: '#F8FAFC' }
-                        }}
-                      >
-                        {option.label}
-                        {currentSort === option.value && <CheckIcon fontSize="small" color="primary" />}
-                      </Button>
-                    ))}
-                  </Stack>
-                </Popover>
+                <SortPopover
+                  open={Boolean(state.sortAnchor)}
+                  anchorEl={state.sortAnchor}
+                  onClose={actions.handleSortClose}
+                  currentSort={state.currentSort}
+                  handleSortChange={actions.handleSortChange}
+                  getSortLabel={getSortLabel}
+                />
 
                 <ToggleButtonGroup
-                  value={viewMode}
+                  value={state.viewMode}
                   exclusive
-                  onChange={(e, val) => val && setViewMode(val)}
+                  onChange={(e, val) => val && actions.setViewMode(val)}
                   size="small"
-                  sx={{
-                    display: { xs: 'none', sm: 'flex' },
-                    bgcolor: 'white',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                    height: 40,
-                    '& .MuiToggleButton-root': {
-                      border: 'none',
-                      borderRadius: 0,
-                      width: 48,
-                      color: '#94A3B8',
-                      '&.Mui-selected': {
-                        bgcolor: 'primary.main',
-                        color: 'white',
-                        '&:hover': { bgcolor: 'primary.dark' }
-                      }
-                    }
-                  }}
+                  sx={{ display: { xs: 'none', sm: 'flex' }, bgcolor: 'white', border: '1px solid #E2E8F0', borderRadius: 1, height: 40, '& .MuiToggleButton-root': { border: 'none', width: 48, color: '#94A3B8', '&.Mui-selected': { bgcolor: 'primary.main', color: 'white' } } }}
                 >
                   <ToggleButton value="grid">
-                    <Tooltip title="Grid View" arrow>
-                      <GridViewIcon fontSize="small" />
-                    </Tooltip>
+                    <Tooltip title="Grid View" arrow><GridViewIcon fontSize="small" /></Tooltip>
                   </ToggleButton>
                   <ToggleButton value="list" sx={{ borderLeft: '1px solid #E2E8F0 !important' }}>
-                    <Tooltip title="List View" arrow>
-                      <ViewListIcon fontSize="small" />
-                    </Tooltip>
+                    <Tooltip title="List View" arrow><ViewListIcon fontSize="small" /></Tooltip>
                   </ToggleButton>
                 </ToggleButtonGroup>
               </Stack>
             </Box>
 
-            {/* Property Grid */}
             {(!initialData || !initialData.items || initialData.items.length === 0) ? (
-              <Alert severity="info" sx={{ mt: 4, borderRadius: 4 }}>
+              <Alert severity="info" sx={{ mt: 4, borderRadius: 1 }}>
                 No properties found matching your criteria. Try adjusting your filters.
               </Alert>
             ) : (
               <>
                 <Grid container spacing={3}>
-                  {initialData.items.map((property: any) => (
-                    <Grid size={viewMode === 'list' ? { xs: 12 } : { xs: 12, sm: 6, md: 4 }} key={property.id || property._id}>
-                      <PropertyCard property={property} viewMode={viewMode} />
+                  {initialData.items.map((property: any, index: number) => (
+                    <Grid size={{ xs: 12, sm: state.viewMode === 'list' ? 12 : 6, md: state.viewMode === 'list' ? 12 : 4 }} key={property.id || property._id}>
+                      <PropertyCard property={property} viewMode={state.viewMode} index={index} />
                     </Grid>
                   ))}
                 </Grid>
 
-                {/* Pagination */}
                 {initialData.totalPages && initialData.totalPages > 1 && (
                   <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
                     <Pagination
                       count={initialData.totalPages}
-                      page={currentPage}
-                      onChange={handlePageChange}
+                      page={state.currentPage}
+                      onChange={actions.handlePageChange}
                       color="primary"
                       shape="rounded"
                       size={isMobile ? 'medium' : 'large'}
@@ -881,263 +235,33 @@ export default function Home({ initialData, propertyTypes = [], error }: HomePro
             )}
           </Grid>
 
-          {/* Right Sidebar */}
-          <Grid size={{ xs: 12, lg: 3 }}>
-            <Stack spacing={4}>
-              {/* Resources Section */}
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, fontSize: '1.25rem' }}>Property Discovery & Resources</Typography>
-                <Typography variant="body2" color="#64748B" sx={{ mb: 2, lineHeight: 1.6, fontSize: '0.95rem' }}>
-                  There are {initialData?.total?.toLocaleString()} Properties for {listingType === 'rent' ? 'rent' : 'sale'} in Malaysia. You can use the enhanced search filters available to find the right
-                  <Link href="#" sx={{ color: 'primary.main', textDecoration: 'underline', mx: 0.5 }}>landed homes</Link>,
-                  <Link href="#" sx={{ color: 'primary.main', textDecoration: 'underline', mx: 0.5 }}>condominium</Link>,
-                  <Link href="#" sx={{ color: 'primary.main', textDecoration: 'underline', mx: 0.5 }}>bungalow</Link> or
-                  <Link href="#" sx={{ color: 'primary.main', textDecoration: 'underline', mx: 0.5 }}>residential land</Link> in this area.
-                </Typography>
-              </Box>
-
-              {/* Map View Card */}
-              <Paper
-                elevation={0}
-                sx={{
-                  borderRadius: 1.5,
-                  border: '1px solid #E2E8F0',
-                  overflow: 'hidden',
-                  bgcolor: 'white'
-                }}
-              >
-                <Box sx={{ bgcolor: 'primary.main', p: 3, color: 'white' }}>
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Box sx={{ bgcolor: 'rgba(255,255,255,0.2)', p: 1, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <MapIcon sx={{ fontSize: 24 }} />
-                    </Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>Explore on Map</Typography>
-                    <Chip
-                      label="NEW"
-                      size="small"
-                      sx={{
-                        bgcolor: '#FCD34D',
-                        color: '#92400E',
-                        fontWeight: 800,
-                        fontSize: '0.65rem',
-                        height: 20
-                      }}
-                    />
-                  </Stack>
-                </Box>
-                <Box sx={{ p: 3 }}>
-                  <Typography variant="body2" color="#64748B" sx={{ mb: 3, lineHeight: 1.6, fontSize: '0.95rem' }}>
-                    View all {initialData?.total?.toLocaleString()} Properties for {listingType} in Malaysia on an interactive map. Find listings near your preferred locations, schools, and amenities.
-                  </Typography>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    sx={{
-                      bgcolor: 'primary.main',
-                      color: 'white',
-                      py: 1.5,
-                      fontWeight: 700,
-                      borderRadius: 1,
-                      textTransform: 'none',
-                      fontSize: '1rem',
-                      '&:hover': { bgcolor: 'primary.dark' }
-                    }}
-                  >
-                    Open Map View →
-                  </Button>
-                </Box>
-              </Paper>
-
-              {/* Popular Locations */}
-              <Paper
-                elevation={0}
-                sx={{
-                  borderRadius: 1.5,
-                  border: '1px solid #E2E8F0',
-                  overflow: 'hidden',
-                  bgcolor: 'white'
-                }}
-              >
-                <Box sx={{ bgcolor: '#EFF6FF', p: 2, borderBottom: '1px solid #E2E8F0' }}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography sx={{ fontSize: '1.1rem' }}>📍</Typography>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>Popular Locations</Typography>
-                  </Stack>
-                </Box>
-                <Box sx={{ p: 3 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 800, color: '#64748B', display: 'block', mb: 2, letterSpacing: '0.05em' }}>
-                    TOP STATES
-                  </Typography>
-                  <Stack spacing={1.5}>
-                    {[
-                      'Selangor',
-                      'Johor',
-                      'Kuala Lumpur',
-                      'Penang',
-                      'Kedah'
-                    ].map((loc) => (
-                      <Stack key={loc} direction="row" spacing={1.5} alignItems="center">
-                        <LocationOnIcon sx={{ fontSize: 18, color: 'text.primary' }} />
-                        <Link
-                          href="#"
-                          underline="hover"
-                          sx={{
-                            color: 'primary.main',
-                            fontWeight: 500,
-                            fontSize: '0.95rem'
-                          }}
-                        >
-                          Property for {listingType === 'rent' ? 'Rent' : 'Sale'} in {loc}
-                        </Link>
-                      </Stack>
-                    ))}
-                    <Link
-                      href="#"
-                      underline="hover"
-                      sx={{
-                        color: 'primary.main',
-                        fontWeight: 600,
-                        fontSize: '0.95rem',
-                        pt: 1,
-                        display: 'block'
-                      }}
-                    >
-                      View More
-                    </Link>
-                  </Stack>
-                </Box>
-              </Paper>
-            </Stack>
-          </Grid>
+          <Sidebar totalCount={initialData?.total || 0} listingType={state.listingType} />
         </Grid>
       </Container>
 
-      {/* Filters Modal */}
-      <Dialog
-        open={mobileFiltersOpen}
-        onClose={() => setMobileFiltersOpen(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 1,
-            maxHeight: '90vh',
-          }
-        }}
-      >
+      <Dialog open={state.mobileFiltersOpen} onClose={() => actions.setMobileFiltersOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 1, maxHeight: '90vh' } }}>
         <DialogTitle sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <FilterListIcon sx={{ color: 'text.primary' }} />
             <Typography variant="h6" sx={{ fontWeight: 700 }}>Filter Properties</Typography>
           </Stack>
-          <IconButton onClick={() => setMobileFiltersOpen(false)} size="small">
-            <CloseIcon />
-          </IconButton>
+          <IconButton onClick={() => actions.setMobileFiltersOpen(false)} size="small"><CloseIcon /></IconButton>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 3 }}>
-          <Filters
-            propertyTypes={propertyTypes}
-            onFilterChange={handleFilterChange}
-            initialFilters={getCurrentFilters()}
-            onClose={() => setMobileFiltersOpen(false)}
-          />
+          <Filters propertyTypes={propertyTypes} onFilterChange={actions.handleFilterChange} initialFilters={getCurrentFilters()} onClose={() => actions.setMobileFiltersOpen(false)} />
         </DialogContent>
       </Dialog>
 
-      {/* Saved Searches Drawer */}
-      <Drawer
-        anchor="right"
-        open={savedSearchesOpen}
-        onClose={() => setSavedSearchesOpen(false)}
-        PaperProps={{
-          sx: { width: { xs: '100%', sm: 400 }, borderRadius: '12px 0 0 12px' }
-        }}
-      >
-        <Box sx={{ p: 3 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={4}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>Saved Searches</Typography>
-              <Typography variant="body2" color="text.secondary">Access your recent and saved filters</Typography>
-            </Box>
-            <IconButton onClick={() => setSavedSearchesOpen(false)}>
-              <CloseIcon />
-            </IconButton>
-          </Stack>
-
-          <Stack spacing={2}>
-            {savedSearches.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 8 }}>
-                <BookmarkBorderIcon sx={{ fontSize: 48, color: '#E2E8F0', mb: 2 }} />
-                <Typography color="text.secondary">No saved searches yet</Typography>
-                <Typography variant="caption" color="text.secondary">Click the bookmark icon to save a search</Typography>
-              </Box>
-            ) : (
-              savedSearches.map((search: any) => (
-                <Paper
-                  key={search.id}
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    borderRadius: 1.5,
-                    cursor: 'pointer',
-                    '&:hover': { borderColor: 'primary.main', bgcolor: '#F8FAFC' },
-                    position: 'relative'
-                  }}
-                  onClick={() => applySavedSearch(search)}
-                >
-                  <Box sx={{ pr: 4 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }} noWrap>
-                      {search.name}
-                    </Typography>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <HistoryIcon sx={{ fontSize: 14 }} />
-                        {new Date(search.timestamp).toLocaleDateString()}
-                      </Typography>
-                      {search.filters > 0 && (
-                        <Chip
-                          label={`${search.filters} filters`}
-                          size="small"
-                          sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
-                          color="primary"
-                          variant="outlined"
-                        />
-                      )}
-                    </Stack>
-                  </Box>
-                  <IconButton
-                    size="small"
-                    sx={{ position: 'absolute', top: 12, right: 12, color: 'text.secondary', '&:hover': { color: 'error.main' } }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteSavedSearch(search.id);
-                    }}
-                  >
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
-                </Paper>
-              ))
-            )}
-          </Stack>
-        </Box>
-      </Drawer>
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={3000}
-        onClose={() => setSnackbarOpen(false)}
-        message="Searched results are saved"
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        ContentProps={{
-          sx: {
-            bgcolor: 'primary.main',
-            color: 'white',
-            fontWeight: 600,
-            borderRadius: 1,
-          }
-        }}
+      <SavedSearches
+        open={state.savedSearchesOpen}
+        onClose={() => actions.setSavedSearchesOpen(false)}
+        savedSearches={state.savedSearches}
+        applySavedSearch={actions.applySavedSearch}
+        handleDeleteSavedSearch={actions.handleDeleteSavedSearch}
       />
-    </Box >
+
+      <Snackbar open={state.snackbarOpen} autoHideDuration={3000} onClose={() => actions.setSnackbarOpen(false)} message={state.snackbarMessage} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} ContentProps={{ sx: { bgcolor: 'primary.main', color: 'white', fontWeight: 600, borderRadius: 1 } }} />
+    </Box>
   );
 }
 
@@ -1160,29 +284,23 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       name
     } = context.query;
 
-    // Build filters from query params (keep full filters for client-side use)
     const filters: PropertyFilters = {};
     if (minPrice) filters.minPrice = parseFloat(minPrice as string);
     if (maxPrice) filters.maxPrice = parseFloat(maxPrice as string);
     if (categories) filters.categories = (categories as string).split(',');
     if (typesParam) filters.types = (typesParam as string).split(',').filter(Boolean);
     if (name) filters.name = name as string;
-    // Note: API does NOT support "location" in request body (doc: section, name, categories, types, bedRooms, bathRooms, minPrice, maxPrice, furnishings only)
 
-    // Section handle
     if (section === 'rent') filters.section = 'rent';
-    else filters.section = 'sale'; // Default
+    else filters.section = 'sale';
 
-    // Handle bedRooms and bathRooms as arrays of numbers
     if (bedRooms) {
       filters.bedRooms = (bedRooms as string).split(',').map(n => n === 'Studio' ? 0 : parseInt(n, 10)).filter(num => !isNaN(num));
     }
     if (bathRooms) {
       filters.bathRooms = (bathRooms as string).split(',').map(n => parseInt(n, 10)).filter(num => !isNaN(num));
     }
-    if (tenure) {
-      filters.tenure = (tenure as string).split(',');
-    }
+    if (tenure) filters.tenure = (tenure as string).split(',');
     if (furnishings) {
       const raw = (furnishings as string).split(',');
       filters.furnishings = raw.map((f) => {
@@ -1191,22 +309,15 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         return f;
       });
     }
-    if (isAuction === 'true') {
-      filters.isAuction = true;
-    }
+    if (isAuction === 'true') filters.isAuction = true;
 
-    // API request body: only documented fields (no location - not in API spec)
     const apiFilters = { ...filters };
     delete (apiFilters as any).location;
 
     const searchTerm = ((name as string) || (location as string) || '').trim().toLowerCase();
-
-    // Fetch property types for filter checkboxes (from API)
     const categoryForTypes = (categories as string)?.split(',')?.[0] || undefined;
     const propertyTypes = await fetchPropertyTypes(categoryForTypes);
 
-    // When user searches by location/city/state: API has no "location" and "name" filters by property title only.
-    // So we fetch WITHOUT name, then filter client-side by city, state, address, etc.
     const filtersForFetch = searchTerm ? (() => {
       const f = { ...apiFilters };
       delete f.name;
@@ -1221,14 +332,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       filtersForFetch
     );
 
-    // Defensive check to handle different API response formats
     let properties: any[] = [];
     let total = 0;
     let totalPages = 0;
 
     if (data && Array.isArray(data.items)) {
       properties = data.items;
-      // The API provides pagination info in _meta
       if (data._meta) {
         total = data._meta.totalCount || properties.length;
         totalPages = data._meta.pageCount || 1;
@@ -1242,7 +351,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       totalPages = 1;
     }
 
-    // Client-side filter by city, state, address, name when user searched by location
     if (searchTerm && properties.length > 0) {
       const words = searchTerm.split(/\s+/).filter(Boolean);
       const matchesTerm = (text: string) => {
@@ -1257,12 +365,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         const country = p.country ?? '';
         const postcode = (p.postcode ?? '').toString();
         return (
-          matchesTerm(name) ||
-          matchesTerm(address) ||
-          matchesTerm(city) ||
-          matchesTerm(state) ||
-          matchesTerm(country) ||
-          matchesTerm(postcode)
+          matchesTerm(name) || matchesTerm(address) || matchesTerm(city) ||
+          matchesTerm(state) || matchesTerm(country) || matchesTerm(postcode)
         );
       });
       properties = filtered;
@@ -1278,21 +382,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     };
 
     return {
-      props: {
-        initialData: validData,
-        propertyTypes,
-      },
+      props: { initialData: validData, propertyTypes },
     };
   } catch (error) {
     console.error('SSR Error:', error);
     return {
       props: {
-        initialData: {
-          items: [],
-          total: 0,
-          page: 1,
-          totalPages: 0,
-        },
+        initialData: { items: [], total: 0, page: 1, totalPages: 0 },
         propertyTypes: [],
         error: 'Failed to load properties. Please try again later.',
       },

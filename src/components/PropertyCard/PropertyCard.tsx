@@ -23,10 +23,12 @@ import GavelIcon from '@mui/icons-material/Gavel';
 interface PropertyCardProps {
     property: Property;
     viewMode?: 'grid' | 'list';
+    index?: number;
 }
 
-const PropertyCard: React.FC<PropertyCardProps> = ({ property, viewMode = 'grid' }) => {
+const PropertyCard: React.FC<PropertyCardProps> = ({ property, viewMode = 'grid', index = 0 }) => {
     const isList = viewMode === 'list';
+    const isPriority = index < 4;
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('en-MY', {
@@ -67,6 +69,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, viewMode = 'grid'
                     height={isList ? "100%" : "220"}
                     image={property.image || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80'}
                     alt={property.name}
+                    loading={isPriority ? "eager" : "lazy"}
                     sx={{
                         objectFit: 'cover',
                         height: isList ? { xs: '200px', sm: '100%' } : '220px'
@@ -227,6 +230,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, viewMode = 'grid'
                     <Stack direction="row" spacing={1.5} alignItems="center">
                         <Avatar
                             src={property.account?.avatar || `https://i.pravatar.cc/150?u=${property.account?.id}`}
+                            imgProps={{ loading: 'lazy' }}
                             sx={{ width: 44, height: 44, border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
                         />
                         <Box>
